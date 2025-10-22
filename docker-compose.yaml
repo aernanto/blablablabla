@@ -1,0 +1,16 @@
+services:
+  tour-package-db:
+    image: postgres:17.5-alpine
+    ports:
+      - '35001:5432' 
+    restart: 'no'
+    environment:
+      POSTGRES_USER: tour-package-dev
+      POSTGRES_PASSWORD: CLI-825.2025X
+      POSTGRES_DB: tour-package-dev
+    volumes:
+      - tour-package-db:/var/lib/postgresql/data
+
+volumes:
+  tour-package-db:
+    driver: local
