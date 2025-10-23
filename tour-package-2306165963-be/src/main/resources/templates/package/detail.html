@@ -4,99 +4,500 @@
     <title th:text="${currentPackage.packageName}"></title>
 </head>
 <div class="content">
-    <h1 th:text="${currentPackage.packageName}">Package Name</h1>
-    
-    <div class="detail-card">
-        
-        <div class="header-info">
-            <h2 style="margin: 0; color: var(--text-dark); font-size: 1.8em;">Package Details</h2>
-            <p style="text-align: right; margin: 0;">
-                <span class="status-badge"
-                      th:text="${currentPackage.status}"
-                      th:classappend="${currentPackage.status == 'Processed' ? 'status-processed' : 'status-pending'}">
-                </span>
-            </p>
-        </div>
-
-        <div class="info-grid-detail">
-            <div class="info-item">
-                <span class="label">Package ID</span>
-                <span th:text="${currentPackage.id}" style="font-size: 0.9em; color: var(--text-muted);"></span>
-            </div>
-            <div class="info-item">
-                <span class="label">Total Price</span>
-                <span th:text="${currentPackage.formattedPrice}" style="color: var(--success-color); font-weight: 700; font-size: 1.2em;"></span>
-            </div>
-            
-            <div class="info-item">
-                <span class="label">Creator (User ID)</span>
-                <span th:text="${currentPackage.userId}"></span>
-            </div>
-            <div class="info-item">
-                <span class="label">Quota</span>
-                <span th:text="${currentPackage.quota} + ' Participants'"></span>
+    <div class="page-header">
+        <div>
+            <h1 th:text="${currentPackage.packageName}">Package Name</h1>
+            <div class="breadcrumb">
+                <a th:href="@{/package}">📦 Packages</a> / <span th:text="${currentPackage.packageName}"></span>
             </div>
         </div>
-
-        <h2 class="section-title">Travel Timeline</h2>
-        <div class="timeline-container">
-            <div class="timeline-point start-point">
-                <span class="timeline-label">Start: </span>
-                <span class="timeline-date" th:text="${#temporals.format(currentPackage.startDate, 'EEEE, dd MMMM yyyy (HH:mm)')}"></span>
-            </div>
-            <div class="timeline-point end-point">
-                <span class="timeline-label">End: </span>
-                <span class="timeline-date" th:text="${#temporals.format(currentPackage.endDate, 'EEEE, dd MMMM yyyy (HH:mm)')}"></span>
-            </div>
-        </div>
-        
+        <span class="status-badge-large"
+              th:text="${currentPackage.status}"
+              th:classappend="${currentPackage.status == 'Processed' ? 'status-processed' : 'status-pending'}">
+        </span>
     </div>
     
-    <div style="margin-top: 30px;">
-        <a th:href="@{/package}" class="btn btn-secondary">Back to List</a>
-        <a th:href="@{/package/update/{id}(id=${currentPackage.id})}" class="btn btn-primary">Edit Package</a>
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
+    
+    <!-- Package Info Section -->
+    <div class="detail-container">
+        <div class="info-card highlight-card">
+            <div class="card-icon">💰</div>
+            <div>
+                <div class="card-label">Total Package Price</div>
+                <div class="card-value" th:text="${currentPackage.formattedPrice}"></div>
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-card">
+                <div class="card-icon-sm">🆔</div>
+                <div>
+                    <div class="card-label">Package ID</div>
+                    <div class="card-value-sm" th:text="${currentPackage.id}"></div>
+                </div>
+            </div>
+            
+            <div class="info-card">
+                <div class="card-icon-sm">👤</div>
+                <div>
+                    <div class="card-label">Creator (User ID)</div>
+                    <div class="card-value-sm" th:text="${currentPackage.userId}"></div>
+                </div>
+            </div>
+            
+            <div class="info-card">
+                <div class="card-icon-sm">👥</div>
+                <div>
+                    <div class="card-label">Maximum Quota</div>
+                    <div class="card-value-sm" th:text="${currentPackage.quota} + ' Participants'"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline Section -->
+        <div class="timeline-section">
+            <h2 class="section-title">📅 Travel Timeline</h2>
+            <div class="timeline">
+                <div class="timeline-item start">
+                    <div class="timeline-marker">🛫</div>
+                    <div class="timeline-content">
+                        <div class="timeline-label">Departure</div>
+                        <div class="timeline-date" th:text="${#temporals.format(currentPackage.startDate, 'EEEE, dd MMMM yyyy')}"></div>
+                        <div class="timeline-time" th:text="${#temporals.format(currentPackage.startDate, 'HH:mm')} + ' WIB'"></div>
+                    </div>
+                </div>
+                
+                <div class="timeline-connector"></div>
+                
+                <div class="timeline-item end">
+                    <div class="timeline-marker">🛬</div>
+                    <div class="timeline-content">
+                        <div class="timeline-label">Return</div>
+                        <div class="timeline-date" th:text="${#temporals.format(currentPackage.endDate, 'EEEE, dd MMMM yyyy')}"></div>
+                        <div class="timeline-time" th:text="${#temporals.format(currentPackage.endDate, 'HH:mm')} + ' WIB'"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Plans Section -->
+    <div class="plans-section">
+        <div class="plans-header">
+            <h2 class="section-title">🗓️ Plans for Package</h2>
+            <a th:href="@{/package/{id}/plan/create(id=${currentPackage.id})}" 
+               class="btn btn-primary"
+               th:if="${currentPackage.status == 'Pending'}">
+                ➕ Create New Plan
+            </a>
+        </div>
+        
+        <div th:if="${currentPackage.plans.isEmpty()}" class="empty-state-small">
+            <div style="font-size: 3em; margin-bottom: 10px;">📋</div>
+            <p>No plans added yet. Start by creating your first plan!</p>
+        </div>
+        
+        <div th:if="${not currentPackage.plans.isEmpty()}" class="plans-grid">
+            <div th:each="plan : ${currentPackage.plans}" class="plan-card">
+                <div class="plan-header">
+                    <div>
+                        <span class="plan-icon" th:text="${plan.activityTypeIcon}"></span>
+                        <span class="plan-type" th:text="${plan.activityType}"></span>
+                    </div>
+                    <span class="status-badge-sm"
+                          th:text="${plan.status}"
+                          th:classappend="${plan.status == 'Processed' ? 'status-processed' : 
+                                          plan.status == 'Pending' ? 'status-pending' : 'status-unfinished'}">
+                    </span>
+                </div>
+                
+                <div class="plan-info">
+                    <div class="plan-location">
+                        <div>
+                            <strong>From:</strong> <span th:text="${plan.startLocation}"></span>
+                        </div>
+                        <div>
+                            <strong>To:</strong> <span th:text="${plan.endLocation}"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="plan-datetime">
+                        <div>
+                            <strong>Start:</strong> 
+                            <span th:text="${#temporals.format(plan.startDate, 'dd MMM yyyy HH:mm')}"></span>
+                        </div>
+                        <div>
+                            <strong>End:</strong> 
+                            <span th:text="${#temporals.format(plan.endDate, 'dd MMM yyyy HH:mm')}"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="plan-price">
+                        <strong>Price:</strong> <span th:text="${plan.formattedPrice}"></span>
+                    </div>
+                </div>
+                
+                <div class="plan-actions" th:if="${currentPackage.status == 'Pending'}">
+                    <a th:href="@{/package/{packageId}/plan/{planId}/edit(packageId=${currentPackage.id}, planId=${plan.id})}" 
+                       class="btn-action btn-edit">✏️</a>
+                    <form th:action="@{/package/{packageId}/plan/{planId}/delete(packageId=${currentPackage.id}, planId=${plan.id})}" 
+                          method="POST" style="display: inline;">
+                        <button type="submit" class="btn-action btn-delete" 
+                                onclick="return confirm('⚠️ Delete this plan?')">🗑️</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-bar">
+        <a th:href="@{/package}" class="btn btn-secondary">← Back to List</a>
+        <div style="display: flex; gap: 10px;">
+            <a th:href="@{/package/update/{id}(id=${currentPackage.id})}" 
+               class="btn btn-primary"
+               th:if="${currentPackage.status == 'Pending'}">✏️ Edit Package</a>
+            <form th:action="@{/package/process/{id}(id=${currentPackage.id})}" 
+                  method="POST" 
+                  style="display: inline;"
+                  th:if="${currentPackage.status == 'Pending'}">
+                <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #00b894, #00875a);">
+                    ✅ Process Package
+                </button>
+            </form>
+            <form th:action="@{/package/delete/{id}(id=${currentPackage.id})}" 
+                  method="POST" 
+                  style="display: inline;">
+                <button type="submit" class="btn btn-danger" 
+                        onclick="return confirm('⚠️ Delete this entire package?')">🗑️ Delete Package</button>
+            </form>
+        </div>
     </div>
 
     <style>
-        .detail-card { padding: 30px; border: 1px solid var(--peach-light); border-radius: 12px; box-shadow: var(--shadow-subtle); background-color: var(--peach-soft);}
-        .header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        
-        .info-grid-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; border-top: 1px solid #f0f0f0; padding-top: 25px; }
-        .info-item { padding: 15px; border-left: 3px solid var(--peach-primary); background-color: white; border-radius: 4px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); }
-        .info-item .label { display: block; font-weight: 600; color: var(--text-muted); font-size: 0.85em; margin-bottom: 5px; text-transform: uppercase; }
-
-        .section-title { color: var(--coral-accent); font-size: 1.5em; margin-top: 40px; margin-bottom: 15px;}
-        
-        /* Timeline Styling */
-        .timeline-container { display: flex; justify-content: space-between; align-items: center; position: relative; padding: 30px 0; border: 1px solid var(--peach-light); border-radius: 8px; background-color: white; }
-        .timeline-container::before { 
-            content: ''; 
-            position: absolute; 
-            top: 50%; 
-            left: 5%; 
-            right: 5%; 
-            height: 4px; 
-            background: linear-gradient(to right, var(--coral-accent), var(--peach-primary)); 
-            z-index: 1;
-            transform: translateY(-50%);
+        .breadcrumb {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            margin-top: 5px;
         }
-        .timeline-point { text-align: center; position: relative; z-index: 2; width: 45%; padding: 0 10px; }
-        .timeline-point::after { 
-            content: ''; 
-            position: absolute; 
-            top: 50%; 
-            width: 20px; 
-            height: 20px; 
-            border-radius: 50%; 
-            background-color: var(--coral-accent); 
-            border: 4px solid var(--peach-soft);
-            z-index: 3;
-            transform: translateY(-50%);
+        
+        .breadcrumb a {
+            color: var(--coral-primary);
+            text-decoration: none;
+            font-weight: 600;
         }
-        .start-point::after { left: 0; transform: translate(-50%, -50%); }
-        .end-point::after { right: 0; transform: translate(50%, -50%); }
-        .timeline-label { display: block; font-weight: 700; color: var(--text-muted); font-size: 0.9em; margin-bottom: 5px; }
-        .timeline-date { display: block; font-size: 1.1em; font-weight: 600; }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+        }
+        
+        .status-badge-large {
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 0.9em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .detail-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .info-card {
+            padding: 25px;
+            background: white;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid var(--coral-primary);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .info-card:hover {
+            transform: translateX(5px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .highlight-card {
+            background: linear-gradient(135deg, #fff8f5, #ffe5d9);
+            border-left: 6px solid var(--success-color);
+            padding: 35px;
+        }
+        
+        .card-icon {
+            font-size: 3em;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+        }
+        
+        .card-icon-sm {
+            font-size: 2em;
+        }
+        
+        .card-label {
+            font-size: 0.85em;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        
+        .card-value {
+            font-size: 2.5em;
+            font-weight: 800;
+            color: var(--success-color);
+        }
+        
+        .card-value-sm {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: var(--text-dark);
+            word-break: break-all;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
+        .timeline-section {
+            background: linear-gradient(135deg, #fff8f5, #ffe5d9);
+            padding: 40px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .section-title {
+            font-size: 1.8em;
+            color: var(--text-dark);
+            margin-bottom: 35px;
+            font-weight: 800;
+        }
+        
+        .timeline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            padding: 20px 0;
+        }
+        
+        .timeline-connector {
+            flex: 1;
+            height: 4px;
+            background: linear-gradient(to right, var(--coral-primary), var(--coral-dark));
+            margin: 0 30px;
+            border-radius: 2px;
+            position: relative;
+        }
+        
+        .timeline-connector::after {
+            content: '✈️';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5em;
+            background: white;
+            padding: 5px;
+            border-radius: 50%;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .timeline-item {
+            text-align: center;
+            position: relative;
+        }
+        
+        .timeline-marker {
+            font-size: 3em;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+        }
+        
+        .timeline-label {
+            font-size: 0.85em;
+            color: var(--text-muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        
+        .timeline-date {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 5px;
+        }
+        
+        .timeline-time {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: var(--coral-primary);
+        }
+        
+        /* Plans Section */
+        .plans-section {
+            background: white;
+            padding: 40px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            margin-top: 40px;
+        }
+        
+        .plans-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .empty-state-small {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, #fff8f5, #ffe5d9);
+            border-radius: var(--radius-md);
+            border: 2px dashed var(--coral-primary);
+        }
+        
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+        }
+        
+        .plan-card {
+            background: linear-gradient(135deg, #fff8f5, #ffe5d9);
+            border-radius: var(--radius-md);
+            padding: 25px;
+            box-shadow: var(--shadow-sm);
+            border-left: 5px solid var(--coral-primary);
+            transition: all 0.3s ease;
+        }
+        
+        .plan-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .plan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--peach-light);
+        }
+        
+        .plan-icon {
+            font-size: 1.8em;
+            margin-right: 10px;
+        }
+        
+        .plan-type {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+        
+        .status-badge-sm {
+            padding: 6px 14px;
+            border-radius: 15px;
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .status-unfinished {
+            background: linear-gradient(135deg, #dfe6e9, #b2bec3);
+            color: #2d3436;
+        }
+        
+        .plan-info {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .plan-location, .plan-datetime {
+            font-size: 0.95em;
+            line-height: 1.8;
+        }
+        
+        .plan-price {
+            font-size: 1.2em;
+            color: var(--success-color);
+            font-weight: 700;
+            padding-top: 15px;
+            border-top: 1px solid var(--peach-light);
+        }
+        
+        .plan-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 15px;
+        }
+        
+        .btn-action {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-sm);
+            text-decoration: none;
+        }
+        
+        .btn-edit { background: linear-gradient(135deg, var(--coral-primary), var(--coral-dark)); }
+        .btn-delete { background: linear-gradient(135deg, #ff6b6b, var(--danger-color)); }
+        
+        .btn-action:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid var(--peach-light);
+        }
+        
+        @media (max-width: 768px) {
+            .page-header { flex-direction: column; gap: 15px; }
+            .timeline { flex-direction: column; gap: 30px; }
+            .timeline-connector { 
+                width: 4px;
+                height: 60px;
+                margin: 0;
+            }
+            .plans-grid {
+                grid-template-columns: 1fr;
+            }
+            .action-bar {
+                flex-direction: column;
+            }
+        }
     </style>
 </div>
 </html>

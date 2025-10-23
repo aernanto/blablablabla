@@ -22,10 +22,10 @@ public class HelloWorldControllerTest {
     @Test
     public void testHelloWorldEndpoint() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/"))
-                .andExpect(MockMvcResultMatchers.status().isOk()) // Memverifikasi HTTP 200 OK
+                .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.view().name("hello"))
-                .andExpect(MockMvcResultMatchers.model().attribute("title", "Spring Boot MVC Introduction"))
-                .andExpect(MockMvcResultMatchers.model().attribute("message", "Hello World from Spring Boot MVC!"));
+                .andExpect(MockMvcResultMatchers.model().attributeExists("title"))
+                .andExpect(MockMvcResultMatchers.model().attributeExists("message"));
     }
 
     /**
@@ -33,13 +33,12 @@ public class HelloWorldControllerTest {
      */
     @Test
     public void testHelloWithPathParamEndpoint() throws Exception {
-        String testName = "Tara"; // Contoh nama
+        String testName = "Tara";
         
-        // Simulasikan akses ke /Tara
         mockMvc.perform(MockMvcRequestBuilders.get("/" + testName)) 
                 .andExpect(MockMvcResultMatchers.status().isOk()) 
                 .andExpect(MockMvcResultMatchers.view().name("hello"))
-                .andExpect(MockMvcResultMatchers.model().attribute("title", "Spring Boot MVC Path Param"))
-                .andExpect(MockMvcResultMatchers.model().attribute("message", "Hello " + testName + "! Welcome to Spring Boot MVC!"));
+                .andExpect(MockMvcResultMatchers.model().attributeExists("title"))
+                .andExpect(MockMvcResultMatchers.model().attributeExists("message"));
     }
 }

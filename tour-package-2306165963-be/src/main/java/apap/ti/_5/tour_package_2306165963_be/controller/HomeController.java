@@ -14,7 +14,6 @@ public class HomeController {
      */
     @GetMapping({"/"})
     public String home(HttpServletRequest request, Model model) {
-        // Mengembalikan nama view index.html
         model.addAttribute("currentUri", request.getRequestURI());
         return "index";
     }
