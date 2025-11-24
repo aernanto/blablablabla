@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,29 +20,27 @@ public class PackageRestController {
     @Autowired private DtoMapper dtoMapper;
 
     @GetMapping
-    public ResponseEntity<List<ReadPackageDto>> getAllPackages() {
-        // Langsung return list kosong kalau null, biar FE ga error
+    public ResponseEntity<List<ReadPackageDto>> getAll() {
         List<Package> list = packageService.getAllPackages();
-        List<ReadPackageDto> dtos = list.stream().map(dtoMapper::toReadDto).collect(Collectors.toList());
-        return ResponseEntity.ok(dtos);
+        return ResponseEntity.ok(list.stream().map(dtoMapper::toReadDto).collect(Collectors.toList()));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ReadPackageDto> getPackageById(@PathVariable String id) {
+    public ResponseEntity<ReadPackageDto> getById(@PathVariable String id) {
         return packageService.getPackageWithPlans(id)
                 .map(p -> ResponseEntity.ok(dtoMapper.toReadDto(p)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<ReadPackageDto> createPackage(@Valid @RequestBody CreatePackageDto dto) {
+    public ResponseEntity<ReadPackageDto> create(@Valid @RequestBody CreatePackageDto dto) {
         Package pkg = dtoMapper.toEntity(dto);
         Package saved = packageService.createPackage(pkg);
         return ResponseEntity.status(HttpStatus.CREATED).body(dtoMapper.toReadDto(saved));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ReadPackageDto> updatePackage(@PathVariable String id, @Valid @RequestBody UpdatePackageDto dto) {
+    public ResponseEntity<ReadPackageDto> update(@PathVariable String id, @Valid @RequestBody UpdatePackageDto dto) {
         Package pkg = dtoMapper.toEntity(dto);
         pkg.setId(id);
         Package updated = packageService.updatePackage(pkg);
@@ -51,13 +48,13 @@ public class PackageRestController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePackage(@PathVariable String id) {
+    public ResponseEntity<Void> delete(@PathVariable String id) {
         if(packageService.deletePackage(id)) return ResponseEntity.noContent().build();
         return ResponseEntity.notFound().build();
     }
 
     @PostMapping("/{id}/process")
-    public ResponseEntity<Void> processPackage(@PathVariable String id) {
+    public ResponseEntity<Void> process(@PathVariable String id) {
         packageService.processPackage(id);
         return ResponseEntity.ok().build();
     }

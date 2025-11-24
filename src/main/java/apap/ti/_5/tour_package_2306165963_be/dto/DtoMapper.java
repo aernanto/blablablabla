@@ -6,243 +6,157 @@ import apap.ti._5.tour_package_2306165963_be.dto.packagedto.*;
 import apap.ti._5.tour_package_2306165963_be.dto.plan.*;
 import apap.ti._5.tour_package_2306165963_be.model.*;
 import apap.ti._5.tour_package_2306165963_be.model.Package;
-
 import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.stream.Collectors;
 
 @Component
 public class DtoMapper {
 
-    public DtoMapper() {}
-
-    // ========== Activity ==========
+    // Activity
     public Activity toEntity(CreateActivityDto dto) {
-        return Activity.builder()
-                .activityName(dto.getActivityName())
-                .activityType(dto.getActivityType())
-                .activityItem(dto.getActivityItem())
-                .capacity(dto.getCapacity())
-                .price(dto.getPrice())
-                .startDate(dto.getStartDate())
-                .endDate(dto.getEndDate())
-                .startLocation(dto.getStartLocation())
-                .endLocation(dto.getEndLocation())
-                .build();
+        Activity a = new Activity();
+        a.setActivityName(dto.getActivityName());
+        a.setActivityType(dto.getActivityType());
+        a.setActivityItem(dto.getActivityItem());
+        a.setCapacity(dto.getCapacity());
+        a.setPrice(dto.getPrice());
+        a.setStartDate(dto.getStartDate()); // Asumsi tipe data cocok (LocalDate/LocalDateTime)
+        a.setEndDate(dto.getEndDate());
+        a.setStartLocation(dto.getStartLocation());
+        a.setEndLocation(dto.getEndLocation());
+        return a;
     }
-
+    
     public Activity toEntity(UpdateActivityDto dto) {
-        return Activity.builder()
-                .id(dto.getId())
-                .activityName(dto.getActivityName())
-                .activityType(dto.getActivityType())
-                .activityItem(dto.getActivityItem())
-                .capacity(dto.getCapacity())
-                .price(dto.getPrice())
-                .startDate(dto.getStartDate())
-                .endDate(dto.getEndDate())
-                .startLocation(dto.getStartLocation())
-                .endLocation(dto.getEndLocation())
-                .build();
+        Activity a = new Activity();
+        a.setId(dto.getId());
+        a.setActivityName(dto.getActivityName());
+        a.setActivityItem(dto.getActivityItem());
+        a.setCapacity(dto.getCapacity());
+        a.setPrice(dto.getPrice());
+        a.setStartDate(dto.getStartDate());
+        a.setEndDate(dto.getEndDate());
+        a.setStartLocation(dto.getStartLocation());
+        a.setEndLocation(dto.getEndLocation());
+        // Activity Type tidak diupdate sesuai AC
+        return a;
     }
 
     public ReadActivityDto toReadDto(Activity entity) {
-        if (entity == null) return null;
-        
-        return ReadActivityDto.builder()
-                .id(entity.getId())
-                .activityName(entity.getActivityName())
-                .activityType(entity.getActivityType())
-                .activityItem(entity.getActivityItem())
-                .capacity(entity.getCapacity())
-                .price(entity.getPrice())
-                .startDate(entity.getStartDate())
-                .endDate(entity.getEndDate())
-                .startLocation(entity.getStartLocation())
-                .endLocation(entity.getEndLocation())
-                .build();
+        return new ReadActivityDto(
+            entity.getId(), entity.getActivityName(), entity.getActivityItem(),
+            entity.getCapacity(), entity.getPrice(), entity.getActivityType(),
+            entity.getStartDate(), entity.getEndDate(),
+            entity.getStartLocation(), entity.getEndLocation()
+        );
     }
 
-    public UpdateActivityDto toUpdateDto(Activity entity) {
-        if (entity == null) return null;
-        
-        return UpdateActivityDto.builder()
-                .id(entity.getId())
-                .activityName(entity.getActivityName())
-                .activityType(entity.getActivityType())
-                .activityItem(entity.getActivityItem())
-                .capacity(entity.getCapacity())
-                .price(entity.getPrice())
-                .startDate(entity.getStartDate())
-                .endDate(entity.getEndDate())
-                .startLocation(entity.getStartLocation())
-                .endLocation(entity.getEndLocation())
-                .build();
-    }
-
-    // ========== Package ==========
+    // Package
     public Package toEntity(CreatePackageDto dto) {
-        return Package.builder()
-                .id(dto.getUserId())
-                // .userId(dto.getUserId())
-                .packageName(dto.getPackageName())
-                .quota(dto.getQuota())
-                .price(dto.getPrice())
-                .startDate(dto.getStartDate())
-                .endDate(dto.getEndDate())
-                .status("Pending")
-                .plans(new ArrayList<>())
-                .build();
+        Package p = new Package();
+        p.setUserId(dto.getUserId());
+        p.setPackageName(dto.getPackageName());
+        p.setQuota(dto.getQuota());
+        p.setPrice(dto.getPrice());
+        p.setStartDate(dto.getStartDate());
+        p.setEndDate(dto.getEndDate());
+        return p;
     }
 
     public Package toEntity(UpdatePackageDto dto) {
-        return Package.builder()
-                .id(dto.getUserId())
-                // .userId(dto.getUserId())
-                .packageName(dto.getPackageName())
-                .quota(dto.getQuota())
-                // .price(dto.getPrice())
-                .startDate(dto.getStartDate())
-                .endDate(dto.getEndDate())
-                .plans(new ArrayList<>())
-                .build();
+        Package p = new Package();
+        p.setId(dto.getUserId()); // Pastikan di DTO ada field ID
+        p.setPackageName(dto.getPackageName());
+        p.setQuota(dto.getQuota());
+        p.setStartDate(dto.getStartDate());
+        p.setEndDate(dto.getEndDate());
+        // p.setPrice(dto.getPrice());
+        return p;
     }
 
     public ReadPackageDto toReadDto(Package entity) {
-        if (entity == null) return null;
+        ReadPackageDto dto = new ReadPackageDto();
+        dto.setId(entity.getId());
+        dto.setUserId(entity.getUserId());
+        dto.setPackageName(entity.getPackageName());
+        dto.setQuota(entity.getQuota());
+        dto.setPrice(entity.getPrice());
+        dto.setStatus(entity.getStatus());
+        dto.setStartDate(entity.getStartDate());
+        dto.setEndDate(entity.getEndDate());
         
-        // ✅ ENSURE plans is NEVER null
-        if (entity.getPlans() == null) {
-            entity.setPlans(new ArrayList<>());
+        if (entity.getPlans() != null) {
+            dto.setPlans(entity.getPlans().stream().map(this::toReadDto).collect(Collectors.toList()));
+        } else {
+            dto.setPlans(new ArrayList<>());
         }
-        
-        return ReadPackageDto.builder()
-                .id(entity.getId())
-                .userId(entity.getUserId())
-                .packageName(entity.getPackageName())
-                .quota(entity.getQuota())
-                .price(entity.getPrice() != null ? entity.getPrice() : 0L)
-                .status(entity.getStatus() != null ? entity.getStatus() : "Pending")
-                .startDate(entity.getStartDate())
-                .endDate(entity.getEndDate())
-                .plans(entity.getPlans().stream()
-                        .map(this::toReadDto)
-                        .collect(Collectors.toList()))
-                .build();
+        return dto;
     }
 
-    public UpdatePackageDto toUpdateDto(Package entity) {
-        if (entity == null) return null;
-        
-        return UpdatePackageDto.builder()
-                .userId(entity.getId())
-                // .userId(entity.getUserId())
-                .packageName(entity.getPackageName())
-                .quota(entity.getQuota())
-                // .price(entity.getPrice())
-                .startDate(entity.getStartDate())
-                .endDate(entity.getEndDate())
-                .build();
-    }
-
-    // ========== Plan ==========
+    // Plan
     public Plan toEntity(CreatePlanDto dto) {
-        return Plan.builder()
-                .activityType(dto.getActivityType())
-                .price(dto.getPrice())
-                .startDate(dto.getStartDate())
-                .endDate(dto.getEndDate())
-                .startLocation(dto.getStartLocation())
-                .endLocation(dto.getEndLocation())
-                .status("Unfinished")
-                .orderedQuantities(new ArrayList<>())
-                .build();
+        Plan p = new Plan();
+        p.setActivityType(dto.getActivityType());
+        p.setPrice(dto.getPrice());
+        p.setStartDate(dto.getStartDate());
+        p.setEndDate(dto.getEndDate());
+        p.setStartLocation(dto.getStartLocation());
+        p.setEndLocation(dto.getEndLocation());
+        return p;
     }
-
+    
     public Plan toEntity(UpdatePlanDto dto) {
-        return Plan.builder()
-                .id(dto.getId())
-                .activityType(dto.getActivityType())
-                .price(dto.getPrice())
-                .startDate(dto.getStartDate())
-                .endDate(dto.getEndDate())
-                .startLocation(dto.getStartLocation())
-                .endLocation(dto.getEndLocation())
-                .orderedQuantities(new ArrayList<>())
-                .build();
+        Plan p = new Plan();
+        p.setId(dto.getId());
+        p.setPrice(dto.getPrice());
+        p.setStartDate(dto.getStartDate());
+        p.setEndDate(dto.getEndDate());
+        p.setStartLocation(dto.getStartLocation());
+        p.setEndLocation(dto.getEndLocation());
+        return p;
     }
 
     public ReadPlanDto toReadDto(Plan entity) {
-        if (entity == null) return null;
-        
-        // ✅ ENSURE orderedQuantities is NEVER null
-        if (entity.getOrderedQuantities() == null) {
-            entity.setOrderedQuantities(new ArrayList<>());
+        ReadPlanDto dto = new ReadPlanDto();
+        dto.setId(entity.getId());
+        dto.setPackageId(entity.getPackageId());
+        dto.setActivityType(entity.getActivityType());
+        dto.setPrice(entity.getPrice());
+        dto.setStatus(entity.getStatus());
+        dto.setStartDate(entity.getStartDate());
+        dto.setEndDate(entity.getEndDate());
+        dto.setStartLocation(entity.getStartLocation());
+        dto.setEndLocation(entity.getEndLocation());
+
+        if (entity.getOrderedQuantities() != null) {
+            dto.setOrderedQuantities(entity.getOrderedQuantities().stream().map(this::toReadDto).collect(Collectors.toList()));
+        } else {
+            dto.setOrderedQuantities(new ArrayList<>());
         }
-        
-        return ReadPlanDto.builder()
-                .id(entity.getId())
-                .packageId(entity.getPackageId())
-                .activityType(entity.getActivityType())
-                .price(entity.getPrice() != null ? entity.getPrice() : 0L)
-                .status(entity.getStatus() != null ? entity.getStatus() : "Unfinished")
-                .startDate(entity.getStartDate())
-                .endDate(entity.getEndDate())
-                .startLocation(entity.getStartLocation())
-                .endLocation(entity.getEndLocation())
-                .orderedQuantities(entity.getOrderedQuantities().stream()
-                        .map(this::toReadDto)
-                        .collect(Collectors.toList()))
-                .build();
+        return dto;
     }
 
-    public UpdatePlanDto toUpdateDto(Plan entity) {
-        if (entity == null) return null;
-        
-        return UpdatePlanDto.builder()
-                .id(entity.getId())
-                .activityType(entity.getActivityType())
-                .price(entity.getPrice())
-                .startDate(entity.getStartDate())
-                .endDate(entity.getEndDate())
-                .startLocation(entity.getStartLocation())
-                .endLocation(entity.getEndLocation())
-                .build();
-    }
-
-    // ========== OrderedQuantity ==========
+    // OrderedQuantity
     public OrderedQuantity toEntity(CreateOrderedQuantityDto dto) {
-        return OrderedQuantity.builder()
-                .activityId(dto.getActivityId())
-                .orderedQuota(dto.getOrderedQuota())
-                .build();
+        OrderedQuantity oq = new OrderedQuantity();
+        oq.setActivityId(dto.getActivityId());
+        oq.setOrderedQuota(dto.getOrderedQuota());
+        return oq;
     }
 
     public ReadOrderedQuantityDto toReadDto(OrderedQuantity entity) {
-        if (entity == null) return null;
-        
         return ReadOrderedQuantityDto.builder()
-                .id(entity.getId())
-                .planId(entity.getPlanId())
-                .activityId(entity.getActivityId())
-                .orderedQuota(entity.getOrderedQuota())
-                .quota(entity.getQuota())
-                .price(entity.getPrice() != null ? entity.getPrice() : 0L)
-                .activityName(entity.getActivityName())
-                .activityItem(entity.getActivityItem())
-                .startDate(entity.getStartDate())
-                .endDate(entity.getEndDate())
-                .build();
-    }
-
-    public UpdateOrderedQuantityDto toUpdateDto(OrderedQuantity entity) {
-        if (entity == null) return null;
-        
-        return UpdateOrderedQuantityDto.builder()
-                .id(entity.getId())
-                .orderedQuota(entity.getOrderedQuota())
-                .build();
+            .id(entity.getId())
+            .planId(entity.getPlanId())
+            .activityId(entity.getActivityId())
+            .orderedQuota(entity.getOrderedQuota())
+            .quota(entity.getQuota())
+            .price(entity.getPrice())
+            .activityName(entity.getActivityName())
+            .activityItem(entity.getActivityItem())
+            .startDate(entity.getStartDate())
+            .endDate(entity.getEndDate())
+            .build();
     }
 }
