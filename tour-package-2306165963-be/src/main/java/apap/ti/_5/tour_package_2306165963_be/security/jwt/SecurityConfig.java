@@ -60,11 +60,11 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/", "/intro", "/intro/**").permitAll()
+                .requestMatchers("/", "/intro", "/intro/**", "/login", "/register").permitAll()
                 .requestMatchers("/webjars/**", "/css/**", "/js/**", "/images/**").permitAll()
                 
                 // Admin loyalty endpoints - require ADMIN role
-                .requestMatchers("/loyalty/admin/**").hasRole("ADMIN")
+                .requestMatchers("/loyalty/admin/**").hasAuthority("Superadmin")
                 
                 // API endpoints - require authentication
                 .requestMatchers("/api/**").authenticated()

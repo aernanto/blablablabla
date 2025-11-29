@@ -37,6 +37,7 @@ public class User {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
     
+    @Builder.Default
     @Column(name = "is_deleted", columnDefinition = "BOOLEAN DEFAULT false")
     private boolean isDeleted = false;
     

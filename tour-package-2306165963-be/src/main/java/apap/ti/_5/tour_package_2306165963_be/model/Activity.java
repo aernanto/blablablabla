@@ -55,11 +55,10 @@ public class Activity {
     @Column(nullable = false, length = 100)
     private String endLocation;
 
-    // === NEW FIELD: Untuk support Soft Delete ===
+    @Builder.Default
     @Column(name = "is_deleted", columnDefinition = "BOOLEAN DEFAULT false")
     private boolean isDeleted = false;
         
-    // === EXISTING HELPER METHODS (DIPERTAHANKAN) ===
 
     public String getFormattedPrice() {
         if (this.price == null) return "Rp 0";

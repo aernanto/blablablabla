@@ -28,6 +28,7 @@ public class Coupon {
     @Column(nullable = false, name = "percent_off")
     private Double percentOff;
     
+    @Builder.Default
     @Column(name = "is_deleted", columnDefinition = "BOOLEAN DEFAULT false")
     private Boolean isDeleted = false;
     

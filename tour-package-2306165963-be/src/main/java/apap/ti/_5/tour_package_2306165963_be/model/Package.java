@@ -43,21 +43,18 @@ public class Package {
     @Column(name = "end_date")
     private LocalDateTime endDate;
 
-    // === NEW FIELD: Untuk support Soft Delete (sesuai backlog baru) ===
+    @Builder.Default
     @Column(name = "is_deleted", columnDefinition = "BOOLEAN DEFAULT false")
     private boolean isDeleted = false;
     
-    // ✅ HAPUS mappedBy, pakai @JoinColumn di sini (Sesuai kode awal Anda)
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "package_id")
     @Builder.Default
     private List<Plan> plans = new ArrayList<>();
     
-    // === EXISTING HELPER METHODS (DIPERTAHANKAN) ===
     
     @Transient
     public boolean canBeEdited() {
-        // Logic lama: hanya Pending yang bisa diedit
         return "Pending".equals(this.status);
     }
     

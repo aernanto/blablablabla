@@ -5,6 +5,7 @@ import apap.ti._5.tour_package_2306165963_be.model.loyalty.*;
 import apap.ti._5.tour_package_2306165963_be.repository.*;
 import apap.ti._5.tour_package_2306165963_be.repository.loyalty.CouponRepository;
 import apap.ti._5.tour_package_2306165963_be.repository.loyalty.CustomerRepository;
+import apap.ti._5.tour_package_2306165963_be.repository.loyalty.PurchasedCouponRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
