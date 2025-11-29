@@ -1,66 +1,488 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::div.content})}">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<div th:fragment="layout(pageTitle, content)">
 <head>
-    <title>Home - Tour Package Management</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle} ?: 'Tour Package Management'">Tour Package Management</title>
+    
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" th:href="@{/webjars/datatables/1.13.6/css/jquery.dataTables.min.css}">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --peach-gradient: linear-gradient(135deg, #FFE5D9 0%, #FFC8B4 100%);
+            --coral-primary: #FF9A76;
+            --coral-dark: #E87D5E;
+            --peach-soft: #FFF8F5;
+            --peach-light: #FFE5D9;
+            --text-dark: #2d3436;
+            --text-muted: #636e72;
+            --success-color: #00b894;
+            --danger-color: #d63031;
+            --warning-color: #fdcb6e;
+            --info-color: #74b9ff;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.12);
+            --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.15);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(to bottom right, #FFF8F5, #FFE5D9);
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding-top: 80px;
+            line-height: 1.7;
+        }
+        
+        /* Navigation Bar */
+        .navbar {
+            background: var(--peach-gradient);
+            backdrop-filter: blur(10px);
+            padding: 18px 5%;
+            box-shadow: var(--shadow-md);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar-brand {
+            font-size: 1.8em;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--coral-primary), var(--coral-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .navbar-center {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .navbar-right {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .user-info {
+            background: rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 0.9em;
+        }
+        
+        .navbar a {
+            color: var(--text-dark);
+            text-decoration: none;
+            padding: 10px 20px;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        
+        .navbar a:hover {
+            background-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .navbar a.active {
+            background: linear-gradient(135deg, var(--coral-primary), var(--coral-dark));
+            color: white;
+            box-shadow: 0 4px 12px rgba(255, 154, 118, 0.4);
+        }
+        
+        .btn-logout {
+            background: linear-gradient(135deg, #ff6b6b, var(--danger-color));
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .btn-logout:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, var(--coral-primary), var(--coral-dark));
+            color: white;
+        }
+        
+        .content-wrapper {
+            width: 90%;
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 50px;
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            min-height: 75vh;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        h1 {
+            color: var(--text-dark);
+            border-bottom: 3px solid var(--coral-primary);
+            padding-bottom: 15px;
+            margin-bottom: 40px;
+            font-weight: 800;
+            font-size: 2.2em;
+            position: relative;
+        }
+        
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 80px;
+            height: 3px;
+            background: var(--coral-dark);
+        }
+        
+        .alert {
+            padding: 18px 24px;
+            border-radius: var(--radius-md);
+            margin-bottom: 30px;
+            font-weight: 600;
+            border-left: 5px solid;
+            animation: slideDown 0.4s ease-out;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .alert-success {
+            background: linear-gradient(135deg, #d1f4e8, #a8e6cf);
+            color: #00875a;
+            border-color: var(--success-color);
+        }
+        
+        .alert-error {
+            background: linear-gradient(135deg, #ffe0e0, #fdd);
+            color: #c10000;
+            border-color: var(--danger-color);
+        }
+        
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95em;
+            margin: 5px 5px 5px 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-sm);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: left 0.5s ease;
+        }
+        
+        .btn:hover::before { left: 100%; }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:active { transform: translateY(-1px); }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--coral-primary), var(--coral-dark));
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(255, 154, 118, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, var(--danger-color));
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            box-shadow: 0 6px 20px rgba(214, 48, 49, 0.4);
+        }
+        
+        .btn-info {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+        }
+        
+        .btn-info:hover {
+            box-shadow: 0 6px 20px rgba(116, 185, 255, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #b2bec3, var(--text-muted));
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            box-shadow: 0 6px 20px rgba(178, 190, 195, 0.4);
+        }
+        
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 700;
+            color: var(--text-dark);
+            font-size: 0.95em;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: var(--radius-sm);
+            font-size: 0.95em;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            background-color: #fafafa;
+        }
+        
+        .form-control:focus {
+            border-color: var(--coral-primary);
+            box-shadow: 0 0 0 4px rgba(255, 154, 118, 0.15);
+            outline: none;
+            background-color: white;
+        }
+        
+        .status-processed {
+            background: linear-gradient(135deg, #d4edda, #a8e6cf);
+            color: #155724;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 700;
+            display: inline-block;
+        }
+        
+        .status-pending {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            color: #856404;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 700;
+            display: inline-block;
+        }
+        
+        .dataTables_wrapper {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            margin-top: 20px;
+        }
+        
+        table.dataTable {
+            width: 100% !important;
+            border-collapse: collapse;
+        }
+        
+        table.dataTable thead th {
+            background: linear-gradient(135deg, var(--coral-primary), var(--coral-dark));
+            color: white;
+            padding: 16px;
+            font-weight: 700;
+            text-align: left;
+            border: none;
+        }
+        
+        table.dataTable tbody td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--peach-light);
+        }
+        
+        table.dataTable tbody tr:hover {
+            background: var(--peach-light);
+            transition: background 0.2s ease;
+        }
+        
+        .dataTables_filter input {
+            border: 2px solid var(--peach-light);
+            border-radius: var(--radius-sm);
+            padding: 8px 14px;
+            margin-left: 10px;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .dataTables_filter input:focus {
+            outline: none;
+            border-color: var(--coral-primary);
+            box-shadow: 0 0 0 3px rgba(255, 154, 118, 0.1);
+        }
+        
+        .dataTables_length select {
+            border: 2px solid var(--peach-light);
+            border-radius: var(--radius-sm);
+            padding: 6px 12px;
+            margin: 0 8px;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .dataTables_length select:focus {
+            outline: none;
+            border-color: var(--coral-primary);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: var(--text-muted);
+            font-size: 0.9em;
+            background: var(--peach-soft);
+            margin-top: 60px;
+            border-top: 2px solid var(--peach-light);
+        }
+        
+        @media (max-width: 768px) {
+            body { padding-top: 160px; }
+            .navbar { flex-direction: column; padding: 15px; }
+            .navbar-center, .navbar-right { 
+                flex-wrap: wrap;
+                justify-content: center;
+                margin-top: 10px;
+                width: 100%;
+            }
+            .content-wrapper { width: 95%; padding: 30px 20px; }
+            h1 { font-size: 1.8em; }
+            .dataTables_wrapper { overflow-x: auto; padding: 15px; }
+            .btn { width: 100%; margin: 5px 0; }
+        }
+    </style>
 </head>
-<div class="content">
-    <div class="welcome-section">
-        <h1 style="border: none; font-size: 3.5em; margin-bottom: 15px; color: var(--text-dark);">
-            Welcome to Your <span style="color: var(--coral-accent);">Tour Management</span> System
-        </h1>
-        <p style="color: var(--text-muted); font-size: 1.1em; margin-bottom: 0;">
-            Manage your tour packages, activities, and plans efficiently and elegantly.
-        </p>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <a th:href="@{/}" class="navbar-brand">✈️ TourPack</a>
+        
+        <!-- Center Menu - Only show if authenticated -->
+        <div class="navbar-center" sec:authorize="isAuthenticated()">
+            <a th:href="@{/}" th:classappend="${currentUri == '/' ? 'active' : ''}">Home</a>
+            
+            <!-- Package - Customer, Vendor, Superadmin -->
+            <a sec:authorize="hasAnyAuthority('Customer', 'TourPackageVendor', 'Superadmin')"
+               th:href="@{/package}" 
+               th:classappend="${#strings.startsWith(currentUri, '/package') ? 'active' : ''}">
+                Packages
+            </a>
+            
+            <!-- Activities - Vendors and Superadmin -->
+            <a sec:authorize="hasAnyAuthority('TourPackageVendor', 'FlightAirline', 'AccomodationOwner', 'RentalVendor', 'Superadmin')"
+               th:href="@{/activities}" 
+               th:classappend="${#strings.startsWith(currentUri, '/activities') ? 'active' : ''}">
+                Activities
+            </a>
+            
+            <!-- Statistics - Superadmin and Tour Package Vendor -->
+            <a sec:authorize="hasAnyAuthority('Superadmin', 'TourPackageVendor')"
+               th:href="@{/statistics}" 
+               th:classappend="${#strings.startsWith(currentUri, '/statistics') ? 'active' : ''}">
+                Statistics
+            </a>
+            
+            <!-- Loyalty - Customer and Superadmin -->
+            <a sec:authorize="hasAnyAuthority('Customer', 'Superadmin')"
+               th:href="@{/loyalty}" 
+               th:classappend="${#strings.startsWith(currentUri, '/loyalty') ? 'active' : ''}">
+                Loyalty
+            </a>
+        </div>
+        
+        <!-- Right Menu -->
+        <div class="navbar-right">
+            <!-- Show if NOT authenticated -->
+            <div sec:authorize="!isAuthenticated()">
+                <a th:href="@{/login}" class="btn-login">🔐 Login</a>
+                <a th:href="@{/register}" class="btn-login">✨ Register</a>
+            </div>
+            
+            <!-- Show if authenticated -->
+            <div sec:authorize="isAuthenticated()" style="display: flex; gap: 8px; align-items: center;">
+                <span class="user-info">
+                    👤 <span sec:authentication="name">User</span>
+                    (<span sec:authentication="authorities">[ROLE]</span>)
+                </span>
+                <form th:action="@{/logout}" method="POST" style="margin: 0;">
+                    <button type="submit" class="btn-logout">🚪 Logout</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Wrapper -->
+    <div class="content-wrapper">
+        <div th:replace="${content}"></div>
     </div>
     
-    <div class="feature-grid">
-        <div class="feature-card">
-            <h2 style="color: var(--coral-accent);">Activities</h2>
-            <p style="color: var(--text-muted);">Define all available activities (flights, hotels, rentals) with pricing.</p>
-            <a th:href="@{/activities}" class="btn btn-secondary">Manage Activities</a>
-        </div>
-
-        <div class="feature-card large-card" style="border: 2px solid var(--coral-accent);">
-            <h2 style="color: var(--coral-accent); font-size: 1.8em;">Packages</h2>
-            <p style="color: var(--text-muted);">The core of your business. Create, view, and organize packages.</p>
-            <a th:href="@{/package}" class="btn btn-primary" style="font-size: 1.1em;">Manage Packages Now</a>
-        </div>
-
-        <div class="feature-card">
-            <h2 style="color: var(--coral-accent);">Statistics & Reports</h2>
-            <p style="color: var(--text-muted);">View analytics and reports for better business decisions.</p>
-            <a th:href="@{/statistics}" class="btn btn-secondary">View Reports</a>
-        </div>
-    </div>
-
-    <style>
-        .welcome-section {
-            text-align: center;
-            padding: 60px 0;
-            background-color: var(--peach-soft);
-            border-radius: 12px;
-            margin-bottom: 50px;
-            box-shadow: var(--shadow-subtle);
-        }
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 30px;
-        }
-        .feature-card {
-            text-align: center;
-            padding: 35px 25px;
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: var(--shadow-subtle);
-            transition: var(--transition);
-            border: 1px solid #f0f0f0;
-        }
-        .feature-card:hover {
-            transform: translateY(-8px); /* More visible hover */
-            box-shadow: var(--shadow-heavy);
-        }
-        .feature-card h2 { margin-top: 0; }
-    </style>
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 TourPack - Tour Package Management System</p>
+    </footer>
+    
+    <!-- jQuery -->
+    <script th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"></script>
+    
+    <!-- DataTables JS -->
+    <script th:src="@{/webjars/datatables/1.13.6/js/jquery.dataTables.min.js}"></script>
+</body>
 </div>
 </html>
