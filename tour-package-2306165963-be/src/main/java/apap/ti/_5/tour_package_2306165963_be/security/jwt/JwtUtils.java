@@ -1,19 +1,17 @@
 package apap.ti._5.tour_package_2306165963_be.security.jwt;
 
-import java.util.Date;
-
+import apap.ti._5.tour_package_2306165963_be.model.User;
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import io.jsonwebtoken.*;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.JwtParser;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SignatureException;
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+
 @Component
 public class JwtUtils {
     private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
@@ -24,44 +22,69 @@ public class JwtUtils {
     @Value("${tour_package.app.jwtExpirationMs}")
     private int jwtExpirationMs;
 
+    private SecretKey getSigningKey() {
+        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public String generateJwtToken(User user) {
+        return Jwts.builder()
+            .subject(user.getUsername())
+            .claim("id", user.getId())
+            .claim("email", user.getEmail())
+            .claim("role", user.getRole())
+            .issuedAt(new Date())
+            .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+            .signWith(getSigningKey())
+            .compact();
+    }
+
     public String getUsernameFromJwtToken(String token) {
-        JwtParser jwtParser = Jwts.parser().verifyWith(Keys.hmacShaKeyFor(jwtSecret.getBytes())).build();
-        Claims claims = jwtParser.parse(token).accept(Jws.CLAIMS).getPayload();
-        return claims.getSubject();
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getSubject();
     }
 
     public String getIdFromJwtToken(String token) {
-        JwtParser jwtParser = Jwts.parser().verifyWith(Keys.hmacShaKeyFor(jwtSecret.getBytes())).build();
-        Claims claims = jwtParser.parse(token).accept(Jws.CLAIMS).getPayload();
+        Claims claims = Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
         return claims.get("id", String.class);
     }
 
     public String getEmailFromJwtToken(String token) {
-        JwtParser jwtParser = Jwts.parser().verifyWith(Keys.hmacShaKeyFor(jwtSecret.getBytes())).build();
-        Claims claims = jwtParser.parse(token).accept(Jws.CLAIMS).getPayload();
+        Claims claims = Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
         return claims.get("email", String.class);
     }
 
     public String getRoleFromJwtToken(String token) {
-        JwtParser jwtParser = Jwts.parser().verifyWith(Keys.hmacShaKeyFor(jwtSecret.getBytes())).build();
-        Claims claims = jwtParser.parse(token).accept(Jws.CLAIMS).getPayload();
+        Claims claims = Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
         return claims.get("role", String.class);
     }
 
     public boolean validateJwtToken(String authToken) {
         try {
-            Jwts.parser().verifyWith(Keys.hmacShaKeyFor(jwtSecret.getBytes())).build().parse(authToken);
+            Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(authToken);
             return true;
-        } catch (SignatureException e) {
-            logger.error("Invalid JWT signature: {}", e.getMessage());
+        } catch (JwtException e) {
+            logger.error("Invalid JWT token: {}", e.getMessage());
         } catch (IllegalArgumentException e) {
             logger.error("JWT claims string is empty: {}", e.getMessage());
-        } catch (MalformedJwtException e) {
-            logger.error("Invalid JWT token: {}", e.getMessage());
-        } catch (ExpiredJwtException e) {
-            logger.error("JWT token is expired: {}", e.getMessage());
-        } catch (UnsupportedJwtException e) {
-            logger.error("JWT token is unsupported: {}", e.getMessage());
         }
         return false;
     }
