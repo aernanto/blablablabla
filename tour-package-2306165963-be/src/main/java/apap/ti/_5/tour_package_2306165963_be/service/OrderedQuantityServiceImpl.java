@@ -2,9 +2,11 @@ package apap.ti._5.tour_package_2306165963_be.service;
 
 import apap.ti._5.tour_package_2306165963_be.model.Activity;
 import apap.ti._5.tour_package_2306165963_be.model.OrderedQuantity;
+import apap.ti._5.tour_package_2306165963_be.model.Package;
 import apap.ti._5.tour_package_2306165963_be.model.Plan;
 import apap.ti._5.tour_package_2306165963_be.repository.ActivityRepository;
 import apap.ti._5.tour_package_2306165963_be.repository.OrderedQuantityRepository;
+import apap.ti._5.tour_package_2306165963_be.repository.PackageRepository;
 import apap.ti._5.tour_package_2306165963_be.repository.PlanRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,9 @@ public class OrderedQuantityServiceImpl implements OrderedQuantityService {
     
     @Autowired
     private ActivityRepository activityRepository;
+    
+    @Autowired
+    private PackageRepository packageRepository;
 
     @Override
     public List<OrderedQuantity> getAllOrderedQuantities() {
@@ -39,7 +44,6 @@ public class OrderedQuantityServiceImpl implements OrderedQuantityService {
 
     @Override
     public OrderedQuantity createOrderedQuantity(String planId, OrderedQuantity orderedQuantity) {
-        // Verify plan exists
         Optional<Plan> planOptional = planRepository.findById(planId);
         if (planOptional.isEmpty()) {
             throw new IllegalArgumentException("Plan not found with ID: " + planId);
@@ -47,12 +51,17 @@ public class OrderedQuantityServiceImpl implements OrderedQuantityService {
         
         Plan plan = planOptional.get();
         
-        // Check if plan can be edited
-        if ("Processed".equals(plan.getStatus())) {
-            throw new IllegalStateException("Cannot add ordered quantity to processed plan");
+        // Check package status - only Pending packages can add ordered quantities
+        Optional<Package> pkgOpt = packageRepository.findById(plan.getPackageId());
+        if (pkgOpt.isEmpty()) {
+            throw new IllegalArgumentException("Package not found");
         }
         
-        // Verify activity exists
+        Package pkg = pkgOpt.get();
+        if (!"Pending".equals(pkg.getStatus())) {
+            throw new IllegalStateException("Can only add ordered quantity to Pending packages");
+        }
+        
         String activityId = orderedQuantity.getActivityId();
         Optional<Activity> activityOptional = activityRepository.findById(activityId);
         if (activityOptional.isEmpty()) {
@@ -60,12 +69,33 @@ public class OrderedQuantityServiceImpl implements OrderedQuantityService {
         }
         
         Activity activity = activityOptional.get();
-        
-        // Validate activity type matches plan type
+
         if (!activity.getActivityType().equals(plan.getActivityType())) {
             throw new IllegalArgumentException(
                 "Activity type (" + activity.getActivityType() + 
                 ") does not match plan type (" + plan.getActivityType() + ")"
+            );
+        }
+        
+        // 2. StartDate must match or be after Plan StartDate
+        if (activity.getStartDate().isBefore(plan.getStartDate())) {
+            throw new IllegalArgumentException(
+                "Activity StartDate must be same or after Plan StartDate"
+            );
+        }
+        
+        // 3. EndDate must match or be before Plan EndDate
+        if (activity.getEndDate().isAfter(plan.getEndDate())) {
+            throw new IllegalArgumentException(
+                "Activity EndDate must be same or before Plan EndDate"
+            );
+        }
+        
+        // 4. StartLocation and EndLocation must match
+        if (!activity.getStartLocation().equals(plan.getStartLocation()) ||
+            !activity.getEndLocation().equals(plan.getEndLocation())) {
+            throw new IllegalArgumentException(
+                "Activity StartLocation & EndLocation must match Plan locations"
             );
         }
         
@@ -76,7 +106,6 @@ public class OrderedQuantityServiceImpl implements OrderedQuantityService {
             throw new IllegalStateException("Activity is already added to this plan");
         }
         
-        // Validate ordered quota
         if (orderedQuantity.getOrderedQuota() > activity.getCapacity()) {
             throw new IllegalArgumentException(
                 "Ordered quota (" + orderedQuantity.getOrderedQuota() + 
@@ -84,11 +113,18 @@ public class OrderedQuantityServiceImpl implements OrderedQuantityService {
             );
         }
         
-        // Generate ID and set plan ID
+        int totalOrderedQuantityAcrossPlan = orderedQuantityRepository.findByPlanId(planId).stream()
+                .mapToInt(OrderedQuantity::getOrderedQuota)
+                .sum();
+        
+        if (totalOrderedQuantityAcrossPlan + orderedQuantity.getOrderedQuota() > pkg.getQuota()) {
+            throw new IllegalArgumentException(
+                "Total ordered quantity across all plans cannot exceed Package Quota (" + pkg.getQuota() + ")"
+            );
+        }
+        
         orderedQuantity.setId(UUID.randomUUID().toString());
         orderedQuantity.setPlanId(planId);
-        
-        // Copy activity details to ordered quantity for denormalization
         orderedQuantity.setQuota(activity.getCapacity());
         orderedQuantity.setPrice(activity.getPrice());
         orderedQuantity.setActivityName(activity.getActivityName());
@@ -96,21 +132,16 @@ public class OrderedQuantityServiceImpl implements OrderedQuantityService {
         orderedQuantity.setStartDate(activity.getStartDate());
         orderedQuantity.setEndDate(activity.getEndDate());
         
-        // Save
         OrderedQuantity saved = orderedQuantityRepository.save(orderedQuantity);
         
-        // Update plan status to Pending (has at least one ordered quantity)
-        if ("Unfinished".equals(plan.getStatus())) {
-            plan.setStatus("Pending");
-            planRepository.save(plan);
-        }
+        // Update plan status & price after adding
+        updatePlanStatusAndPrice(planId, pkg.getQuota());
         
         return saved;
     }
 
     @Override
     public OrderedQuantity updateOrderedQuantity(String id, Integer newQuota) {
-        // Check if exists
         Optional<OrderedQuantity> existingOQ = orderedQuantityRepository.findById(id);
         if (existingOQ.isEmpty()) {
             throw new IllegalArgumentException("Ordered quantity not found with ID: " + id);
@@ -118,13 +149,24 @@ public class OrderedQuantityServiceImpl implements OrderedQuantityService {
         
         OrderedQuantity oq = existingOQ.get();
         
-        // Get plan to check status
         Optional<Plan> planOptional = planRepository.findById(oq.getPlanId());
-        if (planOptional.isPresent() && "Processed".equals(planOptional.get().getStatus())) {
-            throw new IllegalStateException("Cannot update ordered quantity of processed plan");
+        if (planOptional.isEmpty()) {
+            throw new IllegalArgumentException("Plan not found");
         }
         
-        // Validate new quota
+        Plan plan = planOptional.get();
+        
+        // Check package status
+        Optional<Package> pkgOpt = packageRepository.findById(plan.getPackageId());
+        if (pkgOpt.isEmpty()) {
+            throw new IllegalArgumentException("Package not found");
+        }
+        
+        Package pkg = pkgOpt.get();
+        if (!"Pending".equals(pkg.getStatus())) {
+            throw new IllegalStateException("Can only update ordered quantity for Pending packages");
+        }
+        
         if (newQuota <= 0) {
             throw new IllegalArgumentException("Ordered quota must be greater than 0");
         }
@@ -136,10 +178,25 @@ public class OrderedQuantityServiceImpl implements OrderedQuantityService {
             );
         }
         
-        // Update
-        oq.setOrderedQuota(newQuota);
+        // Check total ordered quantity doesn't exceed package quota
+        int currentTotal = orderedQuantityRepository.findByPlanId(oq.getPlanId()).stream()
+                .filter(item -> !item.getId().equals(id)) // exclude current
+                .mapToInt(OrderedQuantity::getOrderedQuota)
+                .sum();
         
-        return orderedQuantityRepository.save(oq);
+        if (currentTotal + newQuota > pkg.getQuota()) {
+            throw new IllegalArgumentException(
+                "Total ordered quantity cannot exceed Package Quota (" + pkg.getQuota() + ")"
+            );
+        }
+        
+        oq.setOrderedQuota(newQuota);
+        OrderedQuantity saved = orderedQuantityRepository.save(oq);
+        
+        // Update plan status & price after updating
+        updatePlanStatusAndPrice(oq.getPlanId(), pkg.getQuota());
+        
+        return saved;
     }
 
     @Override
@@ -152,28 +209,29 @@ public class OrderedQuantityServiceImpl implements OrderedQuantityService {
         
         OrderedQuantity oq = oqOptional.get();
         
-        // Get plan to check status
         Optional<Plan> planOptional = planRepository.findById(oq.getPlanId());
-        if (planOptional.isPresent()) {
-            Plan plan = planOptional.get();
-            
-            if ("Processed".equals(plan.getStatus())) {
-                throw new IllegalStateException("Cannot delete ordered quantity from processed plan");
-            }
-            
-            // Delete
+        if (planOptional.isEmpty()) {
             orderedQuantityRepository.deleteById(id);
-            
-            // Check if plan now has no ordered quantities
-            long count = orderedQuantityRepository.countByPlanId(oq.getPlanId());
-            if (count == 0) {
-                plan.setStatus("Unfinished");
-                planRepository.save(plan);
-            }
-        } else {
-            // Delete anyway if plan doesn't exist
-            orderedQuantityRepository.deleteById(id);
+            return true;
         }
+        
+        Plan plan = planOptional.get();
+        
+        // Check package status
+        Optional<Package> pkgOpt = packageRepository.findById(plan.getPackageId());
+        if (pkgOpt.isEmpty()) {
+            throw new IllegalArgumentException("Package not found");
+        }
+        
+        Package pkg = pkgOpt.get();
+        if (!"Pending".equals(pkg.getStatus())) {
+            throw new IllegalStateException("Can only delete ordered quantity from Pending packages");
+        }
+        
+        orderedQuantityRepository.deleteById(id);
+        
+        // Update plan status & price after deleting
+        updatePlanStatusAndPrice(oq.getPlanId(), pkg.getQuota());
         
         return true;
     }
@@ -187,5 +245,34 @@ public class OrderedQuantityServiceImpl implements OrderedQuantityService {
     public Long calculateTotalPriceForPlan(String planId) {
         Long totalPrice = orderedQuantityRepository.sumTotalPriceByPlanId(planId);
         return totalPrice != null ? totalPrice : 0L;
+    }
+    
+
+    private void updatePlanStatusAndPrice(String planId, int packageQuota) {
+        Optional<Plan> planOpt = planRepository.findById(planId);
+        if (planOpt.isEmpty()) {
+            return;
+        }
+        
+        Plan plan = planOpt.get();
+        
+        // Calculate total ordered quantity
+        int totalOrderedQuantity = orderedQuantityRepository.findByPlanId(planId).stream()
+                .mapToInt(OrderedQuantity::getOrderedQuota)
+                .sum();
+        
+        // Calculate total price
+        Long totalPrice = calculateTotalPriceForPlan(planId);
+        plan.setPrice(totalPrice);
+        
+        if (totalOrderedQuantity >= packageQuota) {
+            plan.setStatus("Fulfilled");
+        } else if (totalOrderedQuantity > 0) {
+            plan.setStatus("Unfulfilled");
+        } else {
+            plan.setStatus("Unfulfilled"); // No ordered quantities yet
+        }
+        
+        planRepository.save(plan);
     }
 }

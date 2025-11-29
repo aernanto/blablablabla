@@ -151,7 +151,7 @@ public class DummyDataInitializer implements CommandLineRunner {
                 .price(8500000L)
                 .startDate(now.plusDays(7))
                 .endDate(now.plusDays(10))
-                .status("Processed")
+                .status("Fulfilled")
                 .plans(new ArrayList<>())
                 .build();
 
@@ -242,7 +242,7 @@ public class DummyDataInitializer implements CommandLineRunner {
                 .packageId(packageId)
                 .activityType(activityType)
                 .price((long) (activity.getPrice() * orderedQuota))
-                .status("Processed")
+                .status("Fulfilled")
                 .startDate(activity.getStartDate())
                 .endDate(activity.getEndDate())
                 .startLocation(activity.getStartLocation())
@@ -273,7 +273,7 @@ public class DummyDataInitializer implements CommandLineRunner {
                 .packageId(packageId)
                 .activityType(activityType)
                 .price(0L)
-                .status("Unfinished")
+                .status("Unfulfilled")
                 .startDate(start)
                 .endDate(end)
                 .startLocation(startLoc)

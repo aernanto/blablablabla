@@ -44,7 +44,6 @@ public class PlanServiceImpl implements PlanService {
 
     @Override
     public Plan createPlan(String packageId, Plan plan) {
-        // Verify package exists
         Optional<Package> packageOptional = packageRepository.findById(packageId);
         if (packageOptional.isEmpty()) {
             throw new IllegalArgumentException("Package not found with ID: " + packageId);
@@ -52,33 +51,27 @@ public class PlanServiceImpl implements PlanService {
         
         Package packageEntity = packageOptional.get();
         
-        // Check if package can be edited
-        if ("Processed".equals(packageEntity.getStatus())) {
-            throw new IllegalStateException("Cannot add plan to processed package");
+        // Can only create plan for Pending packages
+        if (!"Pending".equals(packageEntity.getStatus())) {
+            throw new IllegalStateException("Can only create plan for Pending packages");
         }
         
-        // Validate plan
         validatePlan(plan);
         
-        // Validate plan dates are within package dates
         if (plan.getStartDate().isBefore(packageEntity.getStartDate()) || 
             plan.getEndDate().isAfter(packageEntity.getEndDate())) {
             throw new IllegalArgumentException("Plan dates must be within package dates");
         }
         
-        // Generate ID and set package ID
         plan.setId(UUID.randomUUID().toString());
         plan.setPackageId(packageId);
-        
-        // Set initial status
-        plan.setStatus("Unfinished");
+        plan.setStatus("Unfulfilled"); // Default status
         
         return planRepository.save(plan);
     }
 
     @Override
     public Plan updatePlan(Plan plan) {
-        // Check if exists
         Optional<Plan> existingPlan = planRepository.findById(plan.getId());
         if (existingPlan.isEmpty()) {
             throw new IllegalArgumentException("Plan not found with ID: " + plan.getId());
@@ -86,27 +79,23 @@ public class PlanServiceImpl implements PlanService {
         
         Plan existing = existingPlan.get();
         
-        // Check if can be edited
-        if ("Processed".equals(existing.getStatus())) {
-            throw new IllegalStateException("Cannot update processed plan");
+        // Can only update if status = Pending
+        if (!"Pending".equals(existing.getStatus())) {
+            throw new IllegalStateException("Can only update plans with status Pending");
         }
         
-        // Get package to validate dates
         Optional<Package> packageOptional = packageRepository.findById(existing.getPackageId());
         if (packageOptional.isPresent()) {
             Package packageEntity = packageOptional.get();
             
-            // Validate plan dates are within package dates
             if (plan.getStartDate().isBefore(packageEntity.getStartDate()) || 
                 plan.getEndDate().isAfter(packageEntity.getEndDate())) {
                 throw new IllegalArgumentException("Plan dates must be within package dates");
             }
         }
         
-        // Validate
         validatePlan(plan);
         
-        // Update fields
         existing.setActivityType(plan.getActivityType());
         existing.setPrice(plan.getPrice());
         existing.setStartDate(plan.getStartDate());
@@ -127,15 +116,12 @@ public class PlanServiceImpl implements PlanService {
         
         Plan plan = planOptional.get();
         
-        // Check if can be deleted
-        if ("Processed".equals(plan.getStatus())) {
-            throw new IllegalStateException("Cannot delete processed plan");
+        // Can only delete if status = Pending
+        if (!"Pending".equals(plan.getStatus())) {
+            throw new IllegalStateException("Can only delete plans with status Pending");
         }
         
-        // Delete all associated ordered quantities first
         orderedQuantityRepository.deleteByPlanId(id);
-        
-        // Delete plan
         planRepository.deleteById(id);
         return true;
     }
@@ -150,12 +136,12 @@ public class PlanServiceImpl implements PlanService {
         
         Plan plan = planOptional.get();
         
-        // Check if already processed
-        if ("Processed".equals(plan.getStatus())) {
-            throw new IllegalStateException("Plan is already processed");
+        // Already fulfilled
+        if ("Fulfilled".equals(plan.getStatus())) {
+            throw new IllegalStateException("Plan is already fulfilled");
         }
         
-        // Check if plan has ordered quantities
+        // Must have ordered quantities
         if (plan.getOrderedQuantities() == null || plan.getOrderedQuantities().isEmpty()) {
             throw new IllegalStateException("Cannot process plan without ordered quantities");
         }
@@ -164,8 +150,27 @@ public class PlanServiceImpl implements PlanService {
         Long totalPrice = calculateTotalPlanPrice(id);
         plan.setPrice(totalPrice);
         
-        // Set status to Processed
-        plan.setStatus("Processed");
+        Optional<Package> pkgOpt = packageRepository.findById(plan.getPackageId());
+        if (pkgOpt.isEmpty()) {
+            throw new IllegalStateException("Package not found for this plan");
+        }
+        
+        Package pkg = pkgOpt.get();
+        int packageQuota = pkg.getQuota();
+        
+        // Calculate total ordered quantity across this plan
+        int totalOrderedQuantity = plan.getOrderedQuantities().stream()
+                .mapToInt(OrderedQuantity::getOrderedQuota)
+                .sum();
+        
+        // ACCEPTANCE CRITERIA: 
+        // If total OrderedQuantity == Package Quota → Fulfilled
+        // If total OrderedQuantity < Package Quota → Unfulfilled
+        if (totalOrderedQuantity >= packageQuota) {
+            plan.setStatus("Fulfilled");
+        } else {
+            plan.setStatus("Unfulfilled");
+        }
         
         planRepository.save(plan);
     }
@@ -181,25 +186,19 @@ public class PlanServiceImpl implements PlanService {
         return totalPrice != null ? totalPrice : 0L;
     }
 
-    // ========== PRIVATE HELPER METHODS ==========
-    
     private void validatePlan(Plan plan) {
-        // Validate dates
         if (plan.getEndDate().isBefore(plan.getStartDate())) {
             throw new IllegalArgumentException("End date must be after start date");
         }
         
-        // Validate price
         if (plan.getPrice() != null && plan.getPrice() < 0) {
             throw new IllegalArgumentException("Price cannot be negative");
         }
         
-        // Validate activity type
         if (!isValidActivityType(plan.getActivityType())) {
             throw new IllegalArgumentException("Invalid activity type: " + plan.getActivityType());
         }
         
-        // Validate locations
         if (plan.getStartLocation() == null || plan.getStartLocation().trim().isEmpty()) {
             throw new IllegalArgumentException("Start location is required");
         }

@@ -39,21 +39,14 @@ public class PackageServiceImpl implements PackageService {
 
     @Override
     public Package createPackage(Package packageEntity) {
-        // Validate
         validatePackage(packageEntity);
-        
-        // Generate ID
         packageEntity.setId(UUID.randomUUID().toString());
-        
-        // Set initial status
         packageEntity.setStatus("Pending");
-        
         return packageRepository.save(packageEntity);
     }
 
     @Override
     public Package updatePackage(Package packageEntity) {
-        // Check if exists
         Optional<Package> existingPackage = packageRepository.findById(packageEntity.getId());
         if (existingPackage.isEmpty()) {
             throw new IllegalArgumentException("Package not found with ID: " + packageEntity.getId());
@@ -61,15 +54,13 @@ public class PackageServiceImpl implements PackageService {
         
         Package existing = existingPackage.get();
         
-        // Check if can be edited
-        if ("Processed".equals(existing.getStatus())) {
-            throw new IllegalStateException("Cannot update processed package");
+        // Check if can be edited (only Pending or Processed)
+        if (!"Pending".equals(existing.getStatus()) && !"Processed".equals(existing.getStatus())) {
+            throw new IllegalStateException("Cannot update package with status: " + existing.getStatus());
         }
         
-        // Validate
         validatePackage(packageEntity);
         
-        // Update fields
         existing.setUserId(packageEntity.getUserId());
         existing.setPackageName(packageEntity.getPackageName());
         existing.setQuota(packageEntity.getQuota());
@@ -90,15 +81,12 @@ public class PackageServiceImpl implements PackageService {
         
         Package packageEntity = packageOptional.get();
         
-        // Check if can be deleted
-        if ("Processed".equals(packageEntity.getStatus())) {
-            throw new IllegalStateException("Cannot delete processed package");
+        // Can only delete if status = Pending
+        if (!"Pending".equals(packageEntity.getStatus())) {
+            throw new IllegalStateException("Can only delete packages with status Pending");
         }
         
-        // Delete all associated plans first
         planRepository.deleteByPackageId(id);
-        
-        // Delete package
         packageRepository.deleteById(id);
         return true;
     }
@@ -113,27 +101,30 @@ public class PackageServiceImpl implements PackageService {
         
         Package packageEntity = packageOptional.get();
         
-        // Validate package can be processed
-        if ("Processed".equals(packageEntity.getStatus())) {
-            throw new IllegalStateException("Package is already processed");
+        if (!"Pending".equals(packageEntity.getStatus())) {
+            throw new IllegalStateException("Only Pending packages can be processed");
         }
         
-        // Check if package has at least one plan
+        // Check if has plans
         if (packageEntity.getPlans() == null || packageEntity.getPlans().isEmpty()) {
             throw new IllegalStateException("Cannot process package without plans");
         }
         
-        // Check if all plans are complete (have ordered quantities)
         for (Plan plan : packageEntity.getPlans()) {
-            if (!"Processed".equals(plan.getStatus())) {
-                throw new IllegalStateException("All plans must be processed before processing package. Plan ID: " + plan.getId() + " is still " + plan.getStatus());
+            if (!"Fulfilled".equals(plan.getStatus())) {
+                throw new IllegalStateException("All plan statuses must be 'Fulfilled' before processing package. Plan " + plan.getId() + " has status: " + plan.getStatus());
             }
-            
-        // Set package status to Processed
-        packageEntity.setStatus("Processed");
-        packageRepository.save(packageEntity);
         }
-    
+        
+        // Calculate total package price from all fulfilled plans
+        long totalPrice = packageEntity.getPlans().stream()
+                .mapToLong(plan -> plan.getPrice() != null ? plan.getPrice() : 0L)
+                .sum();
+        
+        packageEntity.setPrice(totalPrice);
+        packageEntity.setStatus("Processed");
+        
+        packageRepository.save(packageEntity);
     }
 
     @Override
@@ -146,30 +137,23 @@ public class PackageServiceImpl implements PackageService {
         return packageRepository.findByStatus(status);
     }
 
-    // ========== PRIVATE HELPER METHODS ==========
-    
     private void validatePackage(Package packageEntity) {
-        // Validate dates
         if (packageEntity.getEndDate().isBefore(packageEntity.getStartDate())) {
             throw new IllegalArgumentException("End date must be after start date");
         }
         
-        // Validate quota
         if (packageEntity.getQuota() <= 0) {
             throw new IllegalArgumentException("Quota must be greater than 0");
         }
         
-        // Validate price
         if (packageEntity.getPrice() < 0) {
             throw new IllegalArgumentException("Price cannot be negative");
         }
         
-        // Validate user ID
         if (packageEntity.getUserId() == null || packageEntity.getUserId().trim().isEmpty()) {
             throw new IllegalArgumentException("User ID is required");
         }
         
-        // Validate package name
         if (packageEntity.getPackageName() == null || packageEntity.getPackageName().trim().isEmpty()) {
             throw new IllegalArgumentException("Package name is required");
         }
