@@ -1,5 +1,6 @@
 package apap.ti._5.tour_package_2306165963_be.service;
 
+import apap.ti._5.tour_package_2306165963_be.model.OrderedQuantity;
 import apap.ti._5.tour_package_2306165963_be.model.Package;
 import apap.ti._5.tour_package_2306165963_be.model.Plan;
 import apap.ti._5.tour_package_2306165963_be.repository.PackageRepository;
@@ -109,10 +110,26 @@ public class PackageServiceImpl implements PackageService {
         if (packageEntity.getPlans() == null || packageEntity.getPlans().isEmpty()) {
             throw new IllegalStateException("Cannot process package without plans");
         }
+
+        boolean allPlansFulfilled = packageEntity.getPlans().stream().allMatch(plan -> "Fulfilled".equals(plan.getStatus()));
+        
+        if (!allPlansFulfilled) {
+            String unfulfilledPlans = packageEntity.getPlans().stream()
+                    .filter(plan -> !"Fulfilled".equals(plan.getStatus()))
+                    .map(plan -> "Plan " + plan.getId() + " (status: " + plan.getStatus() + ")")
+                    .collect(java.util.stream.Collectors.joining(", "));
+        
+            throw new IllegalStateException(
+                "All plan statuses must be 'Fulfilled' before processing package. " +
+                "Unfulfilled plans: " + unfulfilledPlans
+            );
+        }
         
         for (Plan plan : packageEntity.getPlans()) {
-            if (!"Fulfilled".equals(plan.getStatus())) {
-                throw new IllegalStateException("All plan statuses must be 'Fulfilled' before processing package. Plan " + plan.getId() + " has status: " + plan.getStatus());
+            for (OrderedQuantity oq : plan.getOrderedQuantities()) {
+                if (oq.getOrderedQuota() > oq.getQuota()) {
+                    throw new IllegalStateException("OrderedQuantity exceeds Activity Capacity for activity: " + oq.getActivityName());
+                }
             }
         }
         

@@ -77,21 +77,18 @@ public class OrderedQuantityServiceImpl implements OrderedQuantityService {
             );
         }
         
-        // 2. StartDate must match or be after Plan StartDate
         if (activity.getStartDate().isBefore(plan.getStartDate())) {
             throw new IllegalArgumentException(
                 "Activity StartDate must be same or after Plan StartDate"
             );
         }
         
-        // 3. EndDate must match or be before Plan EndDate
         if (activity.getEndDate().isAfter(plan.getEndDate())) {
             throw new IllegalArgumentException(
                 "Activity EndDate must be same or before Plan EndDate"
             );
         }
         
-        // 4. StartLocation and EndLocation must match
         if (!activity.getStartLocation().equals(plan.getStartLocation()) ||
             !activity.getEndLocation().equals(plan.getEndLocation())) {
             throw new IllegalArgumentException(
@@ -134,7 +131,6 @@ public class OrderedQuantityServiceImpl implements OrderedQuantityService {
         
         OrderedQuantity saved = orderedQuantityRepository.save(orderedQuantity);
         
-        // Update plan status & price after adding
         updatePlanStatusAndPrice(planId, pkg.getQuota());
         
         return saved;

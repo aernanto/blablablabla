@@ -38,7 +38,7 @@
                             required
                             onchange="updateActivityDetails()">
                         <option value="">-- Select an Activity --</option>
-                        <option th:each="activity : ${activities}" 
+                        <option th:each="activity : ${availableActivities}" 
                                 th:value="${activity.id}"
                                 th:text="${activity.activityName} + ' - ' + ${activity.activityItem} + ' (' + ${activity.formattedPrice} + ')'"
                                 th:data-name="${activity.activityName}"

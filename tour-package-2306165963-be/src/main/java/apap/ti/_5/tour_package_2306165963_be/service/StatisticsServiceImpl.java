@@ -20,7 +20,6 @@ public class StatisticsServiceImpl implements StatisticsService {
     public Map<String, Long> getRevenueByActivityType(Integer year, Integer month) {
         Map<String, Long> revenueMap = new HashMap<>();
         
-        // Initialize all activity types with 0
         revenueMap.put("Flight", 0L);
         revenueMap.put("Accommodation", 0L);
         revenueMap.put("Vehicle Rental", 0L);
@@ -28,32 +27,34 @@ public class StatisticsServiceImpl implements StatisticsService {
         List<Package> allPackages = packageService.getAllPackages();
 
         for (Package pkg : allPackages) {
-            // Filter by year
+            if (!"Fulfilled".equals(pkg.getStatus()) && !"Processed".equals(pkg.getStatus())) {
+                continue;
+            }
+
             if (pkg.getStartDate() != null && pkg.getStartDate().getYear() != year) {
                 continue;
             }
 
-            // Filter by month if provided
             if (month != null && pkg.getStartDate() != null && 
                 pkg.getStartDate().getMonthValue() != month) {
                 continue;
             }
 
-            // Calculate revenue from all plans
             for (Plan plan : pkg.getPlans()) {
+                if (!"Fulfilled".equals(plan.getStatus())) {
+                    continue;
+                }
+                
                 String activityType = plan.getActivityType();
                 
-                // Normalize activity type name
                 if ("Vehicle".equalsIgnoreCase(activityType)) {
                     activityType = "Vehicle Rental";
                 }
 
-                // Sum up all ordered quantities for this plan
                 long planRevenue = plan.getOrderedQuantities().stream()
                         .mapToLong(OrderedQuantity::getTotalPrice)
                         .sum();
 
-                // Add to the corresponding activity type
                 revenueMap.put(activityType, revenueMap.getOrDefault(activityType, 0L) + planRevenue);
             }
         }

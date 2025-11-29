@@ -77,6 +77,10 @@ public class OrderedQuantityController {
         List<Activity> availableActivities = activityService.getAllActivities()
                 .stream()
                 .filter(a -> a.getActivityType().equals(plan.getActivityType()))
+                .filter(a -> !a.getStartDate().isBefore(plan.getStartDate()))
+                .filter(a -> !a.getEndDate().isAfter(plan.getEndDate()))
+                .filter(a -> a.getStartLocation().equals(plan.getStartLocation()))
+                .filter(a -> a.getEndLocation().equals(plan.getEndLocation()))
                 .collect(Collectors.toList());
 
         model.addAttribute("packageId", packageId);

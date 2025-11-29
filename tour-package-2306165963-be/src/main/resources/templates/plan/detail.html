@@ -138,8 +138,13 @@
                 </div>
 
                 <div class="ordered-actions" th:if="${currentPlan.status != 'Processed'}">
-                    <a th:href="@{/package/{packageId}/plan/{planId}/ordered-quantity/update/{oqId}(packageId=${currentPackage.id}, planId=${currentPlan.id}, oqId=${oq.id})}"
-                       class="btn-action btn-edit">✏️ Edit</a>
+                    <form th:action="@{/package/{packageId}/plan/{planId}/ordered-quantity/{oqId}/update(packageId=${currentPackage.id}, planId=${currentPlan.id}, oqId=${oq.id})}"
+                        method="POST" 
+                        style="display: inline;"
+                        onsubmit="return updateOrderedQuantity(event, this, '${oq.quota}')">
+                        <button type="submit" class="btn-action btn-edit">✏️ Edit Quantity</button>
+                    </form>
+
                     <form th:action="@{/package/{packageId}/plan/{planId}/ordered-quantity/{oqId}/delete(packageId=${currentPackage.id}, planId=${currentPlan.id}, oqId=${oq.id})}"
                           method="POST" style="display: inline;">
                         <button type="submit" class="btn-action btn-delete"
@@ -534,5 +539,40 @@
             }
         }
     </style>
+
+<script>
+    function updateOrderedQuantity(event, form, maxQuota) {
+        event.preventDefault();
+        
+        const newQuota = prompt(`Enter new ordered quantity (max: ${maxQuota}):`);
+        
+        if (newQuota === null) {
+            return false; // User cancelled
+        }
+        
+        const quotaNum = parseInt(newQuota);
+        
+        if (isNaN(quotaNum) || quotaNum <= 0) {
+            alert('⚠️ Please enter a valid positive number');
+            return false;
+        }
+        
+        if (quotaNum > parseInt(maxQuota)) {
+            alert(`⚠️ Ordered quantity cannot exceed capacity (${maxQuota})`);
+            return false;
+        }
+        
+        // Add orderedQuota as hidden input
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'orderedQuota';
+        input.value = quotaNum;
+        form.appendChild(input);
+        
+        form.submit();
+        return true;
+    }
+</script>
+
 </div>
 </html>

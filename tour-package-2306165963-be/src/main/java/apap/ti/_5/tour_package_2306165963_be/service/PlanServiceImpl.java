@@ -163,9 +163,6 @@ public class PlanServiceImpl implements PlanService {
                 .mapToInt(OrderedQuantity::getOrderedQuota)
                 .sum();
         
-        // ACCEPTANCE CRITERIA: 
-        // If total OrderedQuantity == Package Quota → Fulfilled
-        // If total OrderedQuantity < Package Quota → Unfulfilled
         if (totalOrderedQuantity >= packageQuota) {
             plan.setStatus("Fulfilled");
         } else {
