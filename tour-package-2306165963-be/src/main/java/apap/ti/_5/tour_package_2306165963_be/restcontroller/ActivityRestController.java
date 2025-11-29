@@ -1,16 +1,21 @@
+// src/main/java/apap/ti/_5/tour_package_2306165963_be/restcontroller/ActivityRestController.java
 package apap.ti._5.tour_package_2306165963_be.restcontroller;
 
 import apap.ti._5.tour_package_2306165963_be.dto.DtoMapper;
 import apap.ti._5.tour_package_2306165963_be.dto.activity.*;
 import apap.ti._5.tour_package_2306165963_be.model.Activity;
 import apap.ti._5.tour_package_2306165963_be.service.ActivityService;
+import apap.ti._5.tour_package_2306165963_be.security.jwt.JwtUtils;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -24,44 +29,144 @@ public class ActivityRestController {
     @Autowired
     private DtoMapper dtoMapper;
 
+    @Autowired
+    private JwtUtils jwtUtils;
+
+    // GET ALL - Semua authenticated user bisa lihat activities
+    @PreAuthorize("hasAnyAuthority('Superadmin', 'Customer', 'TourPackageVendor', 'FlightAirline', 'AccomodationOwner', 'RentalVendor')")
     @GetMapping
-    public List<ReadActivityDto> getAllActivities() {
-        return activityService.getAllActivities()
+    public ResponseEntity<?> getAllActivities() {
+        try {
+            List<ReadActivityDto> activities = activityService.getAllActivities()
                 .stream()
                 .map(dtoMapper::toReadDto)
                 .collect(Collectors.toList());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<ReadActivityDto> getActivityById(@PathVariable String id) {
-        Optional<Activity> activity = activityService.getActivityById(id);
-        return activity.map(act -> ResponseEntity.ok(dtoMapper.toReadDto(act)))
-                       .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
-    }
-
-    @PostMapping
-    public ResponseEntity<ReadActivityDto> createActivity(@Valid @RequestBody CreateActivityDto dto) {
-        Activity activity = dtoMapper.toEntity(dto);
-        Activity saved = activityService.createActivity(activity);
-        return ResponseEntity.status(HttpStatus.CREATED).body(dtoMapper.toReadDto(saved));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<ReadActivityDto> updateActivity(@PathVariable String id,
-                                                          @Valid @RequestBody UpdateActivityDto dto) {
-        dto.setId(id);
-        Activity activity = dtoMapper.toEntity(dto);
-        Activity updated = activityService.updateActivity(activity);
-        return ResponseEntity.ok(dtoMapper.toReadDto(updated));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteActivity(@PathVariable String id) {
-        try {
-            activityService.deleteActivity(id);
-            return ResponseEntity.noContent().build();
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            
+            return ResponseEntity.ok(Map.of(
+                "status", HttpStatus.OK.value(),
+                "message", "Berhasil mendapatkan daftar activities",
+                "timestamp", new Date(),
+                "data", activities
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                    "status", HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "message", "Error: " + e.getMessage(),
+                    "timestamp", new Date()
+                ));
         }
     }
+
+    // GET BY ID
+    @PreAuthorize("hasAnyAuthority('Superadmin', 'Customer', 'TourPackageVendor', 'FlightAirline', 'AccomodationOwner', 'RentalVendor')")
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getActivityById(@PathVariable String id) {
+        try {
+            Optional<Activity> activity = activityService.getActivityById(id);
+            
+            if (activity.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of(
+                        "status", HttpStatus.NOT_FOUND.value(),
+                        "message", "Activity not found",
+                        "timestamp", new Date()
+                    ));
+            }
+            
+            return ResponseEntity.ok(Map.of(
+                "status", HttpStatus.OK.value(),
+                "message", "Berhasil mendapatkan detail activity",
+                "timestamp", new Date(),
+                "data", dtoMapper.toReadDto(activity.get())
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                    "status", HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "message", "Error: " + e.getMessage(),
+                    "timestamp", new Date()
+                ));
+        }
+    }
+
+    // CREATE - Hanya vendor dan superadmin
+    @PreAuthorize("hasAnyAuthority('Superadmin', 'TourPackageVendor', 'FlightAirline', 'AccomodationOwner', 'RentalVendor')")
+    @PostMapping
+    public ResponseEntity<?> createActivity(@Valid @RequestBody CreateActivityDto dto,
+                                           @RequestHeader("Authorization") String token) {
+        try {
+            String jwt = token.replace("Bearer ", "");
+            String vendorId = jwtUtils.getIdFromJwtToken(jwt);
+            
+            Activity activity = dtoMapper.toEntity(dto);
+            // Set vendor ID dari token (untuk tracking siapa yang buat)
+            // Note: Anda perlu menambahkan field vendorId di Activity model
+            Activity saved = activityService.createActivity(activity);
+            
+            return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Map.of(
+                    "status", HttpStatus.CREATED.value(),
+                    "message", "Activity berhasil dibuat",
+                    "timestamp", new Date(),
+                    "data", dtoMapper.toReadDto(saved)
+                ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                    "status", HttpStatus.BAD_REQUEST.value(),
+                    "message", "Error: " + e.getMessage(),
+                    "timestamp", new Date()
+                ));
+        }
+    }
+
+    // UPDATE - Hanya vendor dan superadmin
+    @PreAuthorize("hasAnyAuthority('Superadmin', 'TourPackageVendor', 'FlightAirline', 'AccomodationOwner', 'RentalVendor')")
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateActivity(@PathVariable String id,
+                                           @Valid @RequestBody UpdateActivityDto dto,
+                                           @RequestHeader("Authorization") String token) {
+        try {
+            dto.setId(id);
+            Activity activity = dtoMapper.toEntity(dto);
+            Activity updated = activityService.updateActivity(activity);
+            
+            return ResponseEntity.ok(Map.of(
+                "status", HttpStatus.OK.value(),
+                "message", "Activity berhasil diupdate",
+                "timestamp", new Date(),
+                "data", dtoMapper.toReadDto(updated)
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                    "status", HttpStatus.BAD_REQUEST.value(),
+                    "message", "Error: " + e.getMessage(),
+                    "timestamp", new Date()
+                ));
+        }
+    }
+
+    // DELETE - Hanya superadmin
+    @PreAuthorize("hasAuthority('Superadmin')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteActivity(@PathVariable String id) {
+        try {
+            activityService.deleteActivity(id);
+            
+            return ResponseEntity.ok(Map.of(
+                "status", HttpStatus.OK.value(),
+                "message", "Activity berhasil dihapus",
+                "timestamp", new Date()
+            ));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of(
+                    "status", HttpStatus.CONFLICT.value(),
+                    "message", e.getMessage(),
+                    "timestamp", new Date()
+                ));
+            }
+        }
 }

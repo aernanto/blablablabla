@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,8 +43,9 @@ public class PackageServiceImpl implements PackageService {
     @Override
     public Package createPackage(Package packageEntity) {
         validatePackage(packageEntity);
-        packageEntity.setId(UUID.randomUUID().toString());
+        packageEntity.setId(generatePackageId());
         packageEntity.setStatus("Pending");
+        packageEntity.setDeleted(false);
         return packageRepository.save(packageEntity);
     }
 
@@ -154,6 +157,43 @@ public class PackageServiceImpl implements PackageService {
         return packageRepository.findByStatus(status);
     }
 
+    // NEW: Get packages by vendor ID
+    @Override
+    public List<Package> getPackagesByVendorId(String vendorId) {
+        return packageRepository.findPackagesByVendorId(vendorId);
+    }
+
+    // NEW: Get package detail with RBAC
+    @Override
+    public Package getPackageDetail(String packageId, String userId, String role) {
+        Package pkg = packageRepository.findById(packageId)
+                .orElseThrow(() -> new IllegalArgumentException("Package not found"));
+
+        // RBAC Logic
+        boolean isOwner = pkg.getUserId().equals(userId);
+        boolean isSuperadmin = "Superadmin".equals(role);
+        boolean isVendor = "TourPackageVendor".equals(role) && packageHasVendorActivity(pkg, userId);
+
+        if (!isOwner && !isSuperadmin && !isVendor) {
+            throw new IllegalStateException("You don't have access to this package");
+        }
+
+        return pkg;
+    }
+
+    // NEW: Get all packages with RBAC
+    @Override
+    public List<Package> getAllPackagesWithRBAC(String userId, String role) {
+        if ("Superadmin".equals(role) || "TourPackageVendor".equals(role)) {
+            // Superadmin dan Vendor bisa lihat semua
+            return packageRepository.findAll();
+        } else {
+            // Customer cuma bisa lihat miliknya sendiri + yang dibuat vendor
+            return packageRepository.findByUserIdOrIsPublic(userId);
+        }
+    }
+
+    // Helper methods
     private void validatePackage(Package packageEntity) {
         if (packageEntity.getEndDate().isBefore(packageEntity.getStartDate())) {
             throw new IllegalArgumentException("End date must be after start date");
@@ -174,5 +214,29 @@ public class PackageServiceImpl implements PackageService {
         if (packageEntity.getPackageName() == null || packageEntity.getPackageName().trim().isEmpty()) {
             throw new IllegalArgumentException("Package name is required");
         }
+    }
+
+    private boolean packageHasVendorActivity(Package pkg, String vendorId) {
+        if (pkg.getPlans() == null) {
+            return false;
+        }
+        // Check if any ordered quantity's activity belongs to this vendor
+        // You need to fetch activity details to check vendorId
+        return pkg.getPlans().stream()
+                .filter(plan -> plan.getOrderedQuantities() != null)
+                .flatMap(plan -> plan.getOrderedQuantities().stream())
+                .map(OrderedQuantity::getActivityId)
+                .distinct()
+                .anyMatch(activityId -> isActivityOwnedByVendor(activityId, vendorId));
+    }
+    
+    private boolean isActivityOwnedByVendor(String activityId, String vendorId) {
+        return false;
+    }
+
+    private String generatePackageId() {
+        String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        long count = packageRepository.countByIdStartingWith("PKG-" + date);
+        return String.format("PKG-%s-%03d", date, count + 1);
     }
 }

@@ -21,6 +21,10 @@ public class Activity {
     
     @Id  
     private String id;
+
+    // === NEW FIELD: Untuk fitur filter 'My Packages' by Vendor ===
+    @Column(name = "vendor_id")
+    private String vendorId; 
     
     @Column(nullable = false, length = 100)
     private String activityName;
@@ -50,7 +54,13 @@ public class Activity {
     
     @Column(nullable = false, length = 100)
     private String endLocation;
+
+    // === NEW FIELD: Untuk support Soft Delete ===
+    @Column(name = "is_deleted", columnDefinition = "BOOLEAN DEFAULT false")
+    private boolean isDeleted = false;
         
+    // === EXISTING HELPER METHODS (DIPERTAHANKAN) ===
+
     public String getFormattedPrice() {
         if (this.price == null) return "Rp 0";
         return String.format("Rp %,d", this.price);

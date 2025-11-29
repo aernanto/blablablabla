@@ -45,6 +45,34 @@ public class PackageController {
         return "package/view-all";
     }
 
+    
+    @GetMapping("/my-packages")
+    public String getMyPackages(Model model, HttpServletRequest request) {
+        
+        String tempVendorId = "";
+        if (request.getUserPrincipal() != null) {
+            tempVendorId = request.getUserPrincipal().getName();
+        }
+
+        final String vendorId = tempVendorId;
+        
+        List<ReadPackageDto> packages = packageService.getAllPackages()
+                .stream()
+                // .filter(pkg -> pkg.getUserId().equals(vendorId)) 
+                .map(pkg -> {
+                    if (pkg.getPlans() == null) {
+                        pkg.setPlans(new ArrayList<>());
+                    }
+                    return dtoMapper.toReadDto(pkg);
+                })
+                .collect(Collectors.toList());
+
+        model.addAttribute("listPackage", packages);
+        model.addAttribute("currentUri", request.getRequestURI());
+        return "package/view-all";
+    }
+    
+
     @GetMapping("/{id}")
     public String getPackageById(@PathVariable String id, Model model, HttpServletRequest request) {
         Optional<Package> packageOptional = packageService.getPackageById(id);
@@ -177,6 +205,7 @@ public class PackageController {
     @PostMapping("/{id}/process")
     public String processPackage(@PathVariable String id, RedirectAttributes redirectAttributes) {
         try {
+
             packageService.processPackage(id);
             redirectAttributes.addFlashAttribute("successMessage", "✅ Package processed successfully!");
         } catch (Exception e) {

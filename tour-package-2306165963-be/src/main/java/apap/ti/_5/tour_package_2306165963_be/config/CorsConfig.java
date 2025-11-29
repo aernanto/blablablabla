@@ -1,4 +1,4 @@
-package apap.ti._5.tour_package_2306165963_be;
+package apap.ti._5.tour_package_2306165963_be.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -8,11 +8,15 @@ import java.util.Optional;
 public interface PackageService {
     List<Package> getAllPackages();
     Optional<Package> getPackageById(String id);
+    Optional<Package> getPackageWithPlans(String id);
     Package createPackage(Package packageEntity);
     Package updatePackage(Package packageEntity);
     boolean deletePackage(String id);
     void processPackage(String id);
     List<Package> getPackagesByUserId(String userId);
     List<Package> getPackagesByStatus(String status);
-    Optional<Package> getPackageWithPlans(String id);
+    
+    List<Package> getPackagesByVendorId(String vendorId);
+    Package getPackageDetail(String packageId, String userId, String role);
+    List<Package> getAllPackagesWithRBAC(String userId, String role);
 }

@@ -11,7 +11,6 @@ import java.util.Optional;
 
 @Repository
 public interface PackageRepository extends JpaRepository<Package, String> {
-    
     // Find by user ID
     List<Package> findByUserId(String userId);
     
@@ -37,4 +36,31 @@ public interface PackageRepository extends JpaRepository<Package, String> {
     
     // Count packages by user
     long countByUserId(String userId);
+
+    // ================= NEW METHODS (IMPLEMENTED) =================
+
+    /**
+     * Query untuk ambil packages by vendor ID.
+     * ADAPTED: Menggunakan 'orderedQuantities' (Logic Lama) bukan 'orderedActivities' (Logic Baru)
+     */
+    @Query("SELECT DISTINCT p FROM Package p " +
+           "JOIN p.plans plan " +
+           "JOIN plan.orderedQuantities oq " +  // Sesuaikan dengan field di Model Plan lama
+           "JOIN oq.activity act " +            // Relasi OrderedQuantity ke Activity
+           "WHERE act.vendorId = :vendorId " +
+           "AND p.isDeleted = false")
+    List<Package> findPackagesByVendorId(@Param("vendorId") String vendorId);
+
+    /**
+     * Query untuk customer (lihat miliknya sendiri + public packages dari Vendor/Admin).
+     * NOTE: Pastikan Entity 'EndUser' ada di project ini. Jika nama class User beda, ganti 'EndUser'.
+     */
+    @Query("SELECT p FROM Package p " +
+           "WHERE (p.userId = :userId OR p.userId IN " +
+           "(SELECT u.id FROM EndUser u WHERE u.role IN ('Superadmin', 'TourPackageVendor'))) " +
+           "AND p.isDeleted = false")
+    List<Package> findByUserIdOrIsPublic(@Param("userId") String userId);
+
+    // Count untuk generate ID (Auto-generate prefix PKG-YYYYMMDD)
+    long countByIdStartingWith(String prefix);
 }
