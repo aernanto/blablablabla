@@ -1,0 +1,47 @@
+[33mcommit fdc81cc2d0cd48301faf7b4137cbc04ac2f00d57[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Aimee Callista Ferlintera Prudence Ernanto <aimee.callista@ui.ac.id>
+Date:   Fri Nov 28 18:34:16 2025 +0700
+
+    ubah dikit2
+
+[33mcommit 01d56b7273d9a6c54f9778b587efc5cd9efa3c5e[m
+Author: Aimee Callista Ferlintera Prudence Ernanto <aimee.callista@ui.ac.id>
+Date:   Sat Nov 8 23:54:12 2025 +0700
+
+    feat: Finish tour package BE
+
+[33mcommit 42d902f8a3e088d78b8555c09bec8b37ea691e51[m
+Author: Aimee Callista Ferlintera Prudence Ernanto <aimee.callista@ui.ac.id>
+Date:   Fri Oct 24 01:45:03 2025 +0700
+
+    feat: CRUD packages semi jadi
+
+[33mcommit 83e82e278cc9425202b72aebaa19b5ee6edd0a78[m
+Author: Aimee Callista Ferlintera Prudence Ernanto <aimee.callista@ui.ac.id>
+Date:   Wed Oct 22 18:31:47 2025 +0700
+
+    feat: homepage and view all packages (not yet bug free)
+
+[33mcommit 5027f991358ddbae20bed5dff193eacb0dc45cc6[m
+Author: Aimee Callista Ferlintera Prudence Ernanto <aimee.callista@ui.ac.id>
+Date:   Wed Oct 22 17:15:49 2025 +0700
+
+    praktikum-0: implement controller dan semua guideline itu
+
+[33mcommit d8c2cfbd545fd480b52dd252e24010f44e41e48c[m
+Author: Aimee Callista Ferlintera Prudence Ernanto <aimee.callista@ui.ac.id>
+Date:   Wed Oct 22 17:05:36 2025 +0700
+
+    project-root: commit docker-compose and submodule ignore
+
+[33mcommit 8dcb2af3ce91ff9b163f26892c9075a7dd585a3b[m
+Author: Aimee Callista Ferlintera Prudence Ernanto <aimee.callista@ui.ac.id>
+Date:   Wed Oct 22 16:03:30 2025 +0700
+
+    Reset repository to start fresh
+
+[33mcommit 861736e508e2568b8cd54a490a8c8544d4ee5324[m
+Author: aernanto <exhamusgoldfeder@gmail.com>
+Date:   Sat Oct 11 13:16:03 2025 +0700
+
+    add README
