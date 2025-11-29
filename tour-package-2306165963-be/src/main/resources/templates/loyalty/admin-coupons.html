@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::div.content})}">
+<head>
+    <title>Manage Coupons - Admin</title>
+</head>
+<div class="content">
+    <div class="page-header">
+        <h1>🎫 Manage Loyalty Coupons</h1>
+        <a th:href="@{/loyalty/admin/coupons/create}" class="btn btn-primary">➕ Create New Coupon</a>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
+
+    <div th:if="${listCoupon == null || listCoupon.isEmpty()}" class="empty-state">
+        <div style="font-size: 4em; margin-bottom: 20px; opacity: 0.5;">🎫</div>
+        <h2>No Coupons Yet</h2>
+        <p>Start by creating your first loyalty coupon!</p>
+        <a th:href="@{/loyalty/admin/coupons/create}" class="btn btn-primary">Create Coupon</a>
+    </div>
+
+    <div th:unless="${listCoupon == null || listCoupon.isEmpty()}" class="table-wrapper">
+        <div class="table-card">
+            <div class="table-header-section">
+                <h2 class="table-title">All Loyalty Coupons</h2>
+            </div>
+            <table id="couponsTable" class="display responsive nowrap" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Discount</th>
+                        <th>Points Required</th>
+                        <th>Created</th>
+                        <th class="no-sort">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="coupon : ${listCoupon}" th:unless="${coupon.isDeleted}">
+                        <td>
+                            <div class="coupon-name" th:text="${coupon.name}">Coupon Name</div>
+                        </td>
+                        <td>
+                            <div class="description-cell" th:text="${coupon.description}">Description</div>
+                        </td>
+                        <td>
+                            <span class="discount-badge" th:text="${coupon.formattedDiscount}">10%</span>
+                        </td>
+                        <td>
+                            <div class="points-cell">
+                                💎 <span th:text="${coupon.formattedPoints}">500 points</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="date-cell" th:text="${#temporals.format(coupon.createdDate, 'dd MMM yyyy')}">Date</div>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <a th:href="@{/loyalty/admin/coupons/{id}/edit(id=${coupon.id})}" 
+                                   class="btn-action btn-edit"
+                                   title="Edit">
+                                    ✏️ Edit
+                                </a>
+                                <form th:action="@{/loyalty/admin/coupons/{id}/delete(id=${coupon.id})}" 
+                                      method="POST" 
+                                      style="display: inline;">
+                                    <button type="submit" 
+                                            class="btn-action btn-delete"
+                                            title="Delete"
+                                            onclick="return confirm('⚠️ Delete this coupon?')">
+                                        🗑️ Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <style>
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+        }
+        
+        .page-header h1 {
+            font-size: 2em;
+            color: #2c3e50;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 80px 40px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 2px dashed #dee2e6;
+        }
+        
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+        
+        .table-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        
+        .table-header-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px 25px;
+        }
+        
+        .table-title {
+            color: white;
+            font-size: 1.3em;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        /* DataTables Styling */
+        .dataTables_wrapper {
+            padding: 25px;
+        }
+        
+        #couponsTable {
+            width: 100% !important;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        #couponsTable thead th {
+            background: #f8f9fa;
+            color: #495057;
+            font-weight: 600;
+            text-transform: capitalize;
+            font-size: 0.9em;
+            padding: 16px 12px;
+            border-bottom: 2px solid #dee2e6;
+            white-space: nowrap;
+            text-align: left;
+        }
+        
+        #couponsTable tbody td {
+            padding: 16px 12px;
+            vertical-align: middle;
+            border-bottom: 1px solid #f0f0f0;
+            color: #2c3e50;
+            font-size: 0.95em;
+        }
+        
+        #couponsTable tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .coupon-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .description-cell {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .discount-badge {
+            background: linear-gradient(135deg, #00b894, #00875a);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.9em;
+        }
+        
+        .points-cell {
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .date-cell {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: nowrap;
+        }
+        
+        .btn-action {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        
+        .btn-edit {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .btn-edit:hover {
+            background: #138496;
+        }
+        
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-delete:hover {
+            background: #c82333;
+        }
+        
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .btn-action {
+                padding: 6px 10px;
+                font-size: 0.75em;
+            }
+        }
+    </style>
+
+    <script th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"></script>
+    <script th:src="@{/webjars/datatables/1.13.6/js/jquery.dataTables.min.js}"></script>
+    <script>
+        $(document).ready(function() {
+            $('#couponsTable').DataTable({
+                responsive: true,
+                pageLength: 10,
+                order: [[4, 'desc']], // Sort by created date
+                columnDefs: [
+                    { targets: 'no-sort', orderable: false }
+                ],
+                language: {
+                    search: "Search coupons:",
+                    lengthMenu: "Show _MENU_ coupons",
+                    info: "Showing _START_ to _END_ of _TOTAL_ coupons",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    }
+                }
+            });
+        });
+    </script>
+</div>
+</html>

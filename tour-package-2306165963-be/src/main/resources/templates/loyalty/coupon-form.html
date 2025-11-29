@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::div.content})}">
+<head>
+    <title th:text="${isEdit} ? 'Edit Coupon' : 'Create New Coupon'">Coupon Form</title>
+</head>
+<div class="content">
+    <div class="form-header">
+        <h1 th:text="${isEdit} ? '✏️ Edit Coupon' : '➕ Create New Coupon'">Form</h1>
+        <p class="subtitle" th:text="${isEdit} ? 'Update coupon details below' : 'Define a new loyalty coupon for customers'"></p>
+        <div class="breadcrumb">
+            <a th:href="@{/loyalty/admin/coupons}">🎫 Manage Coupons</a> / 
+            <span th:text="${isEdit} ? 'Edit' : 'New'}"></span>
+        </div>
+    </div>
+
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
+
+    <div class="form-container">
+        <form th:action="${isEdit} ? 
+                         @{/loyalty/admin/coupons/{id}/update(id=${couponId})} : 
+                         @{/loyalty/admin/coupons/create}"
+              th:object="${couponData}"
+              method="POST"
+              class="modern-form">
+
+            <div class="form-section">
+                <h3 class="section-heading">🎫 Coupon Details</h3>
+
+                <div class="form-group">
+                    <label for="name">Coupon Name <span class="required">*</span></label>
+                    <input type="text" 
+                           id="name" 
+                           th:field="*{name}" 
+                           class="form-control" 
+                           placeholder="e.g., Special End Year Coupons"
+                           required
+                           minlength="3"
+                           maxlength="100"/>
+                    <small class="form-hint">3-100 characters</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description <span class="required">*</span></label>
+                    <textarea id="description" 
+                              th:field="*{description}" 
+                              class="form-control" 
+                              rows="3"
+                              placeholder="e.g., Diskon 10% untuk semua booking"
+                              required
+                              minlength="10"
+                              maxlength="500"></textarea>
+                    <small class="form-hint">10-500 characters</small>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3 class="section-heading">💎 Points & Discount</h3>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="points">Points Required <span class="required">*</span></label>
+                        <input type="number" 
+                               id="points" 
+                               th:field="*{points}" 
+                               class="form-control" 
+                               placeholder="e.g., 500"
+                               required
+                               min="1"
+                               max="100000"
+                               onchange="updatePreview()"/>
+                        <small class="form-hint">1-100,000 points</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="percentOff">Discount Percentage <span class="required">*</span></label>
+                        <input type="number" 
+                               id="percentOff" 
+                               th:field="*{percentOff}" 
+                               class="form-control" 
+                               placeholder="e.g., 10"
+                               required
+                               min="0.01"
+                               max="100"
+                               step="0.01"
+                               onchange="updatePreview()"/>
+                        <small class="form-hint">0.01-100%</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="preview-section">
+                <h3 class="section-heading">👁️ Preview</h3>
+                <div class="coupon-preview">
+                    <div class="preview-badge">PREVIEW</div>
+                    <div class="preview-header">
+                        <div class="preview-name" id="previewName">Coupon Name</div>
+                        <div class="preview-discount" id="previewDiscount">10% OFF</div>
+                    </div>
+                    <div class="preview-description" id="previewDescription">
+                        Description will appear here
+                    </div>
+                    <div class="preview-points" id="previewPoints">
+                        💎 500 points
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <a th:href="@{/loyalty/admin/coupons}" class="btn btn-secondary">❌ Cancel</a>
+                <button type="submit" class="btn btn-primary" 
+                        th:text="${isEdit} ? '💾 Update Coupon' : '✨ Create Coupon'">
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <style>
+        .breadcrumb {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+
+        .breadcrumb a {
+            color: var(--coral-primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .form-header h1 {
+            font-size: 2.5em;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1em;
+            margin-top: 10px;
+        }
+
+        .form-container {
+            background: linear-gradient(135deg, #fff8f5, #ffe5d9);
+            padding: 45px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .modern-form {
+            background: white;
+            padding: 40px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .form-section {
+            margin-bottom: 35px;
+            padding-bottom: 35px;
+            border-bottom: 2px solid var(--peach-light);
+        }
+
+        .form-section:last-of-type {
+            border-bottom: none;
+        }
+
+        .section-heading {
+            font-size: 1.3em;
+            color: var(--coral-primary);
+            margin-bottom: 25px;
+            font-weight: 700;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 700;
+            color: var(--text-dark);
+            font-size: 0.95em;
+        }
+
+        .form-hint {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.85em;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .required {
+            color: var(--danger-color);
+            font-weight: 700;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .preview-section {
+            background: linear-gradient(135deg, #f0f4ff, #e0e8ff);
+            padding: 30px;
+            border-radius: var(--radius-md);
+            margin-bottom: 35px;
+        }
+
+        .coupon-preview {
+            background: linear-gradient(135deg, #fff8f5, #ffe5d9);
+            border-radius: var(--radius-md);
+            padding: 25px;
+            box-shadow: var(--shadow-md);
+            border-left: 5px solid var(--coral-primary);
+            position: relative;
+        }
+
+        .preview-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .preview-header {
+            margin-bottom: 15px;
+        }
+
+        .preview-name {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .preview-discount {
+            font-size: 2em;
+            font-weight: 800;
+            color: var(--coral-primary);
+            margin-bottom: 10px;
+        }
+
+        .preview-description {
+            font-size: 0.95em;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .preview-points {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid var(--peach-light);
+        }
+
+        @media (max-width: 768px) {
+            .form-container { 
+                padding: 25px 20px; 
+            }
+
+            .modern-form { 
+                padding: 25px 20px; 
+            }
+
+            .form-row { 
+                grid-template-columns: 1fr; 
+            }
+
+            .form-actions { 
+                flex-direction: column; 
+            }
+
+            .form-actions .btn { 
+                width: 100%; 
+            }
+        }
+    </style>
+
+    <script th:inline="javascript">
+        function updatePreview() {
+            // Get values
+            const name = document.getElementById('name').value || 'Coupon Name';
+            const description = document.getElementById('description').value || 'Description will appear here';
+            const points = document.getElementById('points').value || '500';
+            const discount = document.getElementById('percentOff').value || '10';
+
+            // Update preview
+            document.getElementById('previewName').textContent = name;
+            document.getElementById('previewDescription').textContent = description;
+            document.getElementById('previewDiscount').textContent = discount + '% OFF';
+            document.getElementById('previewPoints').textContent = '💎 ' + formatPoints(points);
+        }
+
+        function formatPoints(points) {
+            return parseInt(points).toLocaleString() + ' points';
+        }
+
+        // Update preview on input
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('name')?.addEventListener('input', updatePreview);
+            document.getElementById('description')?.addEventListener('input', updatePreview);
+            document.getElementById('points')?.addEventListener('input', updatePreview);
+            document.getElementById('percentOff')?.addEventListener('input', updatePreview);
+
+            // Initial preview
+            updatePreview();
+        });
+    </script>
+</div>
+</html>

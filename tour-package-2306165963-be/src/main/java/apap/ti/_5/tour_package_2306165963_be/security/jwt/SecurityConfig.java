@@ -63,11 +63,14 @@ public class SecurityConfig {
                 .requestMatchers("/", "/intro", "/intro/**").permitAll()
                 .requestMatchers("/webjars/**", "/css/**", "/js/**", "/images/**").permitAll()
                 
+                // Admin loyalty endpoints - require ADMIN role
+                .requestMatchers("/loyalty/admin/**").hasRole("ADMIN")
+                
                 // API endpoints - require authentication
                 .requestMatchers("/api/**").authenticated()
                 
                 // Web endpoints - require authentication
-                .requestMatchers("/package/**", "/activities/**", "/statistics/**").authenticated()
+                .requestMatchers("/package/**", "/activities/**", "/statistics/**", "/loyalty/**").authenticated()
                 
                 .anyRequest().authenticated()
             )

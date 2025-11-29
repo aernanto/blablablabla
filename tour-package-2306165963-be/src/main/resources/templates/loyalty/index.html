@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::div.content})}">
+<head>
+    <title>Loyalty Program</title>
+</head>
+<div class="content">
+    <div class="page-header">
+        <div>
+            <h1>🎁 Loyalty Program</h1>
+            <p class="subtitle">Earn points and redeem exclusive coupons!</p>
+        </div>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
+
+    <!-- Points Card -->
+    <div class="points-section">
+        <div class="points-card">
+            <div class="card-icon">💎</div>
+            <div class="card-content">
+                <div class="card-label">Your Loyalty Points</div>
+                <div class="card-value" th:text="${customer != null ? customer.formattedPoints : '0 points'}">0 points</div>
+            </div>
+            <button onclick="showAddPointsModal()" class="btn btn-primary btn-sm">➕ Add Points (Test)</button>
+        </div>
+    </div>
+
+    <!-- Available Coupons Section -->
+    <div class="coupons-section">
+        <div class="section-header">
+            <h2 class="section-title">🎫 Available Coupons</h2>
+            <a th:href="@{/loyalty/my-coupons}" class="btn btn-info">
+                📋 My Purchased Coupons
+            </a>
+        </div>
+
+        <div th:if="${coupons == null || coupons.isEmpty()}" class="empty-state">
+            <div style="font-size: 4em; margin-bottom: 20px;">🎫</div>
+            <h3>No Coupons Available</h3>
+            <p>Check back soon for exciting offers!</p>
+        </div>
+
+        <div th:unless="${coupons == null || coupons.isEmpty()}" class="coupons-grid">
+            <div th:each="coupon : ${coupons}" class="coupon-card">
+                <div class="coupon-header">
+                    <div class="coupon-name" th:text="${coupon.name}">Coupon Name</div>
+                    <div class="coupon-discount" th:text="${coupon.formattedDiscount}">10% OFF</div>
+                </div>
+                
+                <div class="coupon-description" th:text="${coupon.description}">
+                    Description here
+                </div>
+                
+                <div class="coupon-points">
+                    💎 <span th:text="${coupon.formattedPoints}">500 points</span>
+                </div>
+                
+                <div class="coupon-footer">
+                    <form th:action="@{/loyalty/purchase}" method="POST" style="width: 100%;">
+                        <input type="hidden" name="couponId" th:value="${coupon.id}"/>
+                        <button type="submit" class="btn btn-primary btn-block"
+                                th:disabled="${customer == null || customer.loyaltyPoints < coupon.points}">
+                            <span th:if="${customer != null && customer.loyaltyPoints >= coupon.points}">🛒 Purchase Now</span>
+                            <span th:unless="${customer != null && customer.loyaltyPoints >= coupon.points}">❌ Insufficient Points</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Points Modal (for testing) -->
+    <div id="addPointsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>➕ Add Loyalty Points (Test)</h3>
+                <span class="close" onclick="closeAddPointsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form th:action="@{/loyalty/add-points-test}" method="POST" id="addPointsForm">
+                    <div class="form-group">
+                        <label for="pointsAmount">Points to Add:</label>
+                        <input type="number" id="pointsAmount" name="points" 
+                               class="form-control" 
+                               placeholder="Enter points (e.g., 500)" 
+                               min="1" max="100000" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" onclick="closeAddPointsModal()" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Points</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .page-header {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1em;
+            margin-top: 10px;
+        }
+
+        .points-section {
+            margin-bottom: 40px;
+        }
+
+        .points-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            color: white;
+        }
+
+        .points-card .card-icon {
+            font-size: 4em;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+        }
+
+        .points-card .card-content {
+            flex: 1;
+        }
+
+        .points-card .card-label {
+            font-size: 1em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .points-card .card-value {
+            font-size: 3em;
+            font-weight: 800;
+        }
+
+        .coupons-section {
+            background: white;
+            padding: 40px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: var(--text-dark);
+            font-weight: 800;
+            margin: 0;
+        }
+
+        .coupons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .coupon-card {
+            background: linear-gradient(135deg, #fff8f5, #ffe5d9);
+            border-radius: var(--radius-md);
+            padding: 25px;
+            box-shadow: var(--shadow-sm);
+            border-left: 5px solid var(--coral-primary);
+            transition: all 0.3s ease;
+        }
+
+        .coupon-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .coupon-header {
+            margin-bottom: 15px;
+        }
+
+        .coupon-name {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .coupon-discount {
+            font-size: 2em;
+            font-weight: 800;
+            color: var(--coral-primary);
+            margin-bottom: 10px;
+        }
+
+        .coupon-description {
+            font-size: 0.95em;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .coupon-points {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 15px;
+        }
+
+        .coupon-footer {
+            padding-top: 15px;
+            border-top: 2px solid var(--peach-light);
+        }
+
+        .btn-block {
+            width: 100%;
+            text-align: center;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 40px;
+            color: var(--text-muted);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 0;
+            border-radius: var(--radius-lg);
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow-lg);
+            animation: slideDown 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            padding: 25px 30px;
+            border-bottom: 2px solid var(--peach-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: var(--text-dark);
+        }
+
+        .close {
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close:hover {
+            color: var(--danger-color);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .points-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .section-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+
+            .coupons-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 20% auto;
+            }
+        }
+    </style>
+
+    <script>
+        function showAddPointsModal() {
+            document.getElementById('addPointsModal').style.display = 'block';
+        }
+
+        function closeAddPointsModal() {
+            document.getElementById('addPointsModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('addPointsModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</div>
+</html>
