@@ -55,11 +55,10 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .csrf(csrf -> csrf.disable()) 
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/intro", "/intro/**").permitAll()
-                .requestMatchers("/login", "/register").permitAll()
+                .requestMatchers("/login", "/register", "/perform_login").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 
                 .requestMatchers("/webjars/**", "/css/**", "/js/**", "/images/**").permitAll()
@@ -71,10 +70,22 @@ public class SecurityConfig {
                 
                 .anyRequest().authenticated()
             )
+            .formLogin(form -> form
+                .loginPage("/login")
+                .loginProcessingUrl("/perform_login")
+                .defaultSuccessUrl("/package", true)
+                .failureUrl("/login?error=true")
+                .permitAll()
+            )
+            .logout(logout -> logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/login?logout=true")
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID")
+                .permitAll()
+            )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class)
-            // ✅ DISABLE FORM LOGIN (kita pakai JWT)
-            .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable());
 
         return http.build();

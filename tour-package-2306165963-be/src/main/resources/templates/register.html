@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Tour Package Management</title>
+    <title>Register - Tour Package Management</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -18,34 +18,34 @@
             padding: 20px;
         }
         
-        .login-container {
+        .register-container {
             background: white;
             border-radius: 16px;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-            max-width: 450px;
+            max-width: 500px;
             width: 100%;
             overflow: hidden;
         }
         
-        .login-header {
+        .register-header {
             background: linear-gradient(135deg, #FF9A76, #E87D5E);
             padding: 40px 30px;
             text-align: center;
             color: white;
         }
         
-        .login-header h1 {
+        .register-header h1 {
             font-size: 2em;
             font-weight: 800;
             margin-bottom: 10px;
         }
         
-        .login-header p {
+        .register-header p {
             font-size: 0.95em;
             opacity: 0.95;
         }
         
-        .login-body {
+        .register-body {
             padding: 40px 30px;
         }
         
@@ -70,7 +70,7 @@
         }
         
         .form-group {
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
         
         .form-group label {
@@ -121,7 +121,7 @@
             box-shadow: 0 6px 20px rgba(255, 154, 118, 0.4);
         }
         
-        .login-footer {
+        .register-footer {
             text-align: center;
             margin-top: 24px;
             padding-top: 24px;
@@ -129,57 +129,79 @@
             color: #636e72;
         }
         
-        .login-footer a {
+        .register-footer a {
             color: #FF9A76;
             text-decoration: none;
             font-weight: 600;
         }
         
-        .login-footer a:hover {
+        .register-footer a:hover {
             text-decoration: underline;
         }
         
         @media (max-width: 480px) {
-            .login-header {
+            .register-header {
                 padding: 30px 20px;
             }
             
-            .login-body {
+            .register-body {
                 padding: 30px 20px;
             }
             
-            .login-header h1 {
+            .register-header h1 {
                 font-size: 1.6em;
             }
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-header">
-            <h1>✈️ TourPack Login</h1>
-            <p>Welcome back! Please login to continue</p>
+    <div class="register-container">
+        <div class="register-header">
+            <h1>✨ Join TourPack</h1>
+            <p>Create your account to get started</p>
         </div>
         
-        <div class="login-body">
+        <div class="register-body">
             <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}">
-                ❌ Invalid username or password
+                ❌ Registration failed
             </div>
             
             <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}">
-                ✅ You have been logged out successfully
+                ✅ Registration successful
             </div>
             
-            <form action="/perform_login" method="POST">
+            <form action="/api/auth/register" method="POST" id="registerForm">
                 <div class="form-group">
                     <label for="username">Username</label>
                     <input type="text" 
                            id="username" 
                            name="username" 
                            class="form-control" 
-                           placeholder="Enter your username"
+                           placeholder="Choose a username"
                            required 
+                           minlength="3"
+                           maxlength="50"
                            autofocus>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" 
+                           id="email" 
+                           name="email" 
+                           class="form-control" 
+                           placeholder="your.email@example.com"
+                           required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" 
+                           id="name" 
+                           name="name" 
+                           class="form-control" 
+                           placeholder="Your full name"
+                           required>
                 </div>
                 
                 <div class="form-group">
@@ -188,19 +210,67 @@
                            id="password" 
                            name="password" 
                            class="form-control" 
-                           placeholder="Enter your password"
-                           required>
+                           placeholder="Create a strong password"
+                           required
+                           minlength="6">
+                </div>
+                
+                <div class="form-group">
+                    <label for="role">Register as</label>
+                    <select id="role" name="role" class="form-control" required>
+                        <option value="Customer">Customer</option>
+                        <option value="TourPackageVendor">Tour Package Vendor</option>
+                        <option value="FlightAirline">Flight Airline</option>
+                        <option value="AccomodationOwner">Accommodation Owner</option>
+                        <option value="RentalVendor">Vehicle Rental Vendor</option>
+                    </select>
                 </div>
                 
                 <button type="submit" class="btn btn-primary">
-                    🔐 Login
+                    ✨ Create Account
                 </button>
             </form>
             
-            <div class="login-footer">
-                Don't have an account? <a href="/register">Register here</a>
+            <div class="register-footer">
+                Already have an account? <a href="/login">Login here</a>
             </div>
         </div>
     </div>
+
+    <script>
+        // Handle form submission via API
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                username: document.getElementById('username').value,
+                email: document.getElementById('email').value,
+                name: document.getElementById('name').value,
+                password: document.getElementById('password').value,
+                role: document.getElementById('role').value
+            };
+            
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('✅ Registration successful! Redirecting to login...');
+                    window.location.href = '/login?registered=true';
+                } else {
+                    alert('❌ Registration failed: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Registration failed: ' + error.message);
+            }
+        });
+    </script>
 </body>
 </html>

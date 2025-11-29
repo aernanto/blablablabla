@@ -6,6 +6,7 @@ import apap.ti._5.tour_package_2306165963_be.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,10 +27,22 @@ public class DummyDataInitializer implements CommandLineRunner {
     
     @Autowired
     private PlanRepository planRepository;
+    
+    @Autowired
+    private UserRepository userRepository;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
     public void run(String... args) {
+        // Create Users first
+        if (userRepository.count() == 0) {
+            log.info("🚀 Creating dummy users...");
+            createUsers();
+        }
+        
         if (activityRepository.count() > 0) {
             log.info("✅ Dummy data already exists. Skipping initialization.");
             return;
@@ -37,17 +50,112 @@ public class DummyDataInitializer implements CommandLineRunner {
 
         log.info("🚀 Starting dummy data generation...");
         
-        // 1. Create Activities
+        // Create Activities
         List<Activity> activities = createActivities();
         activityRepository.saveAll(activities);
         log.info("✅ Created {} activities", activities.size());
         
-        // 2. Create Packages with Plans
+        // Create Packages with Plans
         List<Package> packages = createPackages(activities);
         packageRepository.saveAll(packages);
         log.info("✅ Created {} packages", packages.size());
         
         log.info("🎉 Dummy data generation completed!");
+    }
+
+    private void createUsers() {
+        List<User> users = new ArrayList<>();
+        
+        // 1. Superadmin
+        users.add(User.builder()
+                .id(UUID.randomUUID().toString())
+                .username("admin")
+                .password(passwordEncoder.encode("admin123"))
+                .email("admin@tourpack.com")
+                .name("Super Admin")
+                .role("Superadmin")
+                .isDeleted(false)
+                .build());
+        
+        // 2. Tour Package Vendor
+        users.add(User.builder()
+                .id(UUID.randomUUID().toString())
+                .username("vendor_tour")
+                .password(passwordEncoder.encode("vendor123"))
+                .email("vendor@tourpack.com")
+                .name("Tour Package Vendor")
+                .role("TourPackageVendor")
+                .isDeleted(false)
+                .build());
+        
+        // 3. Flight Airline Vendor
+        users.add(User.builder()
+                .id(UUID.randomUUID().toString())
+                .username("vendor_flight")
+                .password(passwordEncoder.encode("flight123"))
+                .email("flight@tourpack.com")
+                .name("Garuda Airlines")
+                .role("FlightAirline")
+                .isDeleted(false)
+                .build());
+        
+        // 4. Accommodation Owner
+        users.add(User.builder()
+                .id(UUID.randomUUID().toString())
+                .username("vendor_hotel")
+                .password(passwordEncoder.encode("hotel123"))
+                .email("hotel@tourpack.com")
+                .name("Grand Hyatt Hotels")
+                .role("AccomodationOwner")
+                .isDeleted(false)
+                .build());
+        
+        // 5. Vehicle Rental Vendor
+        users.add(User.builder()
+                .id(UUID.randomUUID().toString())
+                .username("vendor_rental")
+                .password(passwordEncoder.encode("rental123"))
+                .email("rental@tourpack.com")
+                .name("Bali Car Rental")
+                .role("RentalVendor")
+                .isDeleted(false)
+                .build());
+        
+        // 6-7. Customers
+        users.add(User.builder()
+                .id(UUID.randomUUID().toString())
+                .username("customer1")
+                .password(passwordEncoder.encode("customer123"))
+                .email("customer1@gmail.com")
+                .name("John Doe")
+                .role("Customer")
+                .isDeleted(false)
+                .build());
+        
+        users.add(User.builder()
+                .id(UUID.randomUUID().toString())
+                .username("customer2")
+                .password(passwordEncoder.encode("customer123"))
+                .email("customer2@gmail.com")
+                .name("Jane Smith")
+                .role("Customer")
+                .isDeleted(false)
+                .build());
+        
+        userRepository.saveAll(users);
+        log.info("✅ Created {} users", users.size());
+        
+        // Print credentials for easy access
+        log.info("========================================");
+        log.info("📝 DUMMY USER CREDENTIALS:");
+        log.info("Superadmin -> username: admin | password: admin123");
+        log.info("Tour Vendor -> username: vendor_tour | password: vendor123");
+        log.info("Flight Vendor -> username: vendor_flight | password: flight123");
+        log.info("Hotel Vendor -> username: vendor_hotel | password: hotel123");
+        log.info("Rental Vendor -> username: vendor_rental | password: rental123");
+        log.info("Customer 1 -> username: customer1 | password: customer123");
+        log.info("Customer 2 -> username: customer2 | password: customer123");
+        log.info("========================================");
     }
 
     private List<Activity> createActivities() {
@@ -142,7 +250,7 @@ public class DummyDataInitializer implements CommandLineRunner {
         LocalDateTime now = LocalDateTime.now();
         List<Package> packages = new ArrayList<>();
 
-        // Package 1: Bali Getaway (Processed)
+        // Package 1: Bali Getaway (Fulfilled)
         Package pkg1 = Package.builder()
                 .id(UUID.randomUUID().toString())
                 .userId("user-001")

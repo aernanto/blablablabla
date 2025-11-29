@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" th:replace="~{index :: layout(~{::title}, ~{::div.content})}">
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::div.content})}">
 <head>
     <title>Home - Tour Package Management</title>
 </head>
@@ -15,10 +15,10 @@
         </p>
         
         <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 50px;">
-            <a href="/package" class="btn btn-primary" style="font-size: 1.2em; padding: 16px 40px;">
+            <a th:href="@{/package}" class="btn btn-primary" style="font-size: 1.2em; padding: 16px 40px;">
                 📦 View Packages
             </a>
-            <a href="/activities" class="btn btn-info" style="font-size: 1.2em; padding: 16px 40px;">
+            <a th:href="@{/activities}" class="btn btn-info" style="font-size: 1.2em; padding: 16px 40px;">
                 🎯 Browse Activities
             </a>
         </div>
