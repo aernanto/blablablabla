@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
-<div th:fragment="layout(pageTitle, content)">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${pageTitle} ?: 'Tour Package Management'">Tour Package Management</title>
+    <title th:text="${param.pageTitle != null ? param.pageTitle[0] : 'Tour Package Management'}">Tour Package Management</title>
     
     <!-- DataTables CSS -->
     <link rel="stylesheet" th:href="@{/webjars/datatables/1.13.6/css/jquery.dataTables.min.css}">
@@ -324,65 +323,6 @@
             display: inline-block;
         }
         
-        .dataTables_wrapper {
-            background: white;
-            padding: 30px;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-md);
-            margin-top: 20px;
-        }
-        
-        table.dataTable {
-            width: 100% !important;
-            border-collapse: collapse;
-        }
-        
-        table.dataTable thead th {
-            background: linear-gradient(135deg, var(--coral-primary), var(--coral-dark));
-            color: white;
-            padding: 16px;
-            font-weight: 700;
-            text-align: left;
-            border: none;
-        }
-        
-        table.dataTable tbody td {
-            padding: 14px 16px;
-            border-bottom: 1px solid var(--peach-light);
-        }
-        
-        table.dataTable tbody tr:hover {
-            background: var(--peach-light);
-            transition: background 0.2s ease;
-        }
-        
-        .dataTables_filter input {
-            border: 2px solid var(--peach-light);
-            border-radius: var(--radius-sm);
-            padding: 8px 14px;
-            margin-left: 10px;
-            font-family: 'Inter', sans-serif;
-        }
-        
-        .dataTables_filter input:focus {
-            outline: none;
-            border-color: var(--coral-primary);
-            box-shadow: 0 0 0 3px rgba(255, 154, 118, 0.1);
-        }
-        
-        .dataTables_length select {
-            border: 2px solid var(--peach-light);
-            border-radius: var(--radius-sm);
-            padding: 6px 12px;
-            margin: 0 8px;
-            font-family: 'Inter', sans-serif;
-        }
-        
-        .dataTables_length select:focus {
-            outline: none;
-            border-color: var(--coral-primary);
-        }
-        
         footer {
             text-align: center;
             padding: 30px 20px;
@@ -396,7 +336,7 @@
         @media (max-width: 768px) {
             body { padding-top: 160px; }
             .navbar { flex-direction: column; padding: 15px; }
-            .navbar-center, .navbar-right { 
+            .navbar-center, .navbar-right {
                 flex-wrap: wrap;
                 justify-content: center;
                 margin-top: 10px;
@@ -404,7 +344,6 @@
             }
             .content-wrapper { width: 95%; padding: 30px 20px; }
             h1 { font-size: 1.8em; }
-            .dataTables_wrapper { overflow-x: auto; padding: 15px; }
             .btn { width: 100%; margin: 5px 0; }
         }
     </style>
@@ -417,29 +356,21 @@
         <!-- Center Menu - Only show if authenticated -->
         <div class="navbar-center" sec:authorize="isAuthenticated()">
             <a th:href="@{/}" th:classappend="${currentUri == '/' ? 'active' : ''}">Home</a>
-            
-            <!-- Package - Customer, Vendor, Superadmin -->
             <a sec:authorize="hasAnyAuthority('Customer', 'TourPackageVendor', 'Superadmin')"
                th:href="@{/package}" 
                th:classappend="${#strings.startsWith(currentUri, '/package') ? 'active' : ''}">
                 Packages
             </a>
-            
-            <!-- Activities - Vendors and Superadmin -->
             <a sec:authorize="hasAnyAuthority('TourPackageVendor', 'FlightAirline', 'AccomodationOwner', 'RentalVendor', 'Superadmin')"
                th:href="@{/activities}" 
                th:classappend="${#strings.startsWith(currentUri, '/activities') ? 'active' : ''}">
                 Activities
             </a>
-            
-            <!-- Statistics - Superadmin and Tour Package Vendor -->
             <a sec:authorize="hasAnyAuthority('Superadmin', 'TourPackageVendor')"
                th:href="@{/statistics}" 
                th:classappend="${#strings.startsWith(currentUri, '/statistics') ? 'active' : ''}">
                 Statistics
             </a>
-            
-            <!-- Loyalty - Customer and Superadmin -->
             <a sec:authorize="hasAnyAuthority('Customer', 'Superadmin')"
                th:href="@{/loyalty}" 
                th:classappend="${#strings.startsWith(currentUri, '/loyalty') ? 'active' : ''}">
@@ -449,13 +380,10 @@
         
         <!-- Right Menu -->
         <div class="navbar-right">
-            <!-- Show if NOT authenticated -->
             <div sec:authorize="!isAuthenticated()">
                 <a th:href="@{/login}" class="btn-login">🔐 Login</a>
                 <a th:href="@{/register}" class="btn-login">✨ Register</a>
             </div>
-            
-            <!-- Show if authenticated -->
             <div sec:authorize="isAuthenticated()" style="display: flex; gap: 8px; align-items: center;">
                 <span class="user-info">
                     👤 <span sec:authentication="name">User</span>
@@ -470,7 +398,7 @@
 
     <!-- Main Content Wrapper -->
     <div class="content-wrapper">
-        <div th:replace="${content}"></div>
+        <th:block th:insert="~{::div.content}"></th:block>
     </div>
     
     <!-- Footer -->
@@ -480,9 +408,7 @@
     
     <!-- jQuery -->
     <script th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"></script>
-    
     <!-- DataTables JS -->
     <script th:src="@{/webjars/datatables/1.13.6/js/jquery.dataTables.min.js}"></script>
 </body>
-</div>
 </html>

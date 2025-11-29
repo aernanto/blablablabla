@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{index :: layout(~{::title}, ~{::div.content})}">
+<head>
+    <title>Home - Tour Package Management</title>
+</head>
+<div class="content">
+    <div style="text-align: center; padding: 80px 20px;">
+        <div style="font-size: 6em; margin-bottom: 30px;">✈️</div>
+        <h1 style="font-size: 3em; color: #2c3e50; margin-bottom: 20px; font-weight: 800;">
+            Welcome to TourPack
+        </h1>
+        <p style="font-size: 1.3em; color: #636e72; margin-bottom: 40px; line-height: 1.8;">
+            Your all-in-one tour package management system.<br>
+            Create, manage, and track tour packages with ease.
+        </p>
+        
+        <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 50px;">
+            <a href="/package" class="btn btn-primary" style="font-size: 1.2em; padding: 16px 40px;">
+                📦 View Packages
+            </a>
+            <a href="/activities" class="btn btn-info" style="font-size: 1.2em; padding: 16px 40px;">
+                🎯 Browse Activities
+            </a>
+        </div>
+
+        <div style="margin-top: 80px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; max-width: 900px; margin-left: auto; margin-right: auto;">
+            <div style="background: linear-gradient(135deg, #fff8f5, #ffe5d9); padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <div style="font-size: 3em; margin-bottom: 15px;">📋</div>
+                <h3 style="color: #2c3e50; margin-bottom: 10px;">Manage Packages</h3>
+                <p style="color: #636e72;">Create and organize tour packages efficiently</p>
+            </div>
+            
+            <div style="background: linear-gradient(135deg, #fff8f5, #ffe5d9); padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <div style="font-size: 3em; margin-bottom: 15px;">🎫</div>
+                <h3 style="color: #2c3e50; margin-bottom: 10px;">Track Activities</h3>
+                <p style="color: #636e72;">Monitor all activities and bookings</p>
+            </div>
+            
+            <div style="background: linear-gradient(135deg, #fff8f5, #ffe5d9); padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <div style="font-size: 3em; margin-bottom: 15px;">📊</div>
+                <h3 style="color: #2c3e50; margin-bottom: 10px;">View Statistics</h3>
+                <p style="color: #636e72;">Analyze revenue and performance</p>
+            </div>
+        </div>
+    </div>
+</div>
+</html>

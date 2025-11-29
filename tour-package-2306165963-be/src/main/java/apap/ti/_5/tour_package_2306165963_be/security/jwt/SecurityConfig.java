@@ -58,24 +58,24 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Public endpoints
+                .requestMatchers("/", "/intro", "/intro/**").permitAll()
+                .requestMatchers("/login", "/register").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/", "/intro", "/intro/**", "/login", "/register").permitAll()
+                
                 .requestMatchers("/webjars/**", "/css/**", "/js/**", "/images/**").permitAll()
+                .requestMatchers("/error", "/favicon.ico").permitAll()
                 
-                // Admin loyalty endpoints - require ADMIN role
-                .requestMatchers("/loyalty/admin/**").hasAuthority("Superadmin")
-                
-                // API endpoints - require authentication
                 .requestMatchers("/api/**").authenticated()
                 
-                // Web endpoints - require authentication
                 .requestMatchers("/package/**", "/activities/**", "/statistics/**", "/loyalty/**").authenticated()
                 
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class)
+            // ✅ DISABLE FORM LOGIN (kita pakai JWT)
+            .formLogin(form -> form.disable())
+            .httpBasic(basic -> basic.disable());
 
         return http.build();
     }
@@ -83,7 +83,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000", "http://localhost:8080"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

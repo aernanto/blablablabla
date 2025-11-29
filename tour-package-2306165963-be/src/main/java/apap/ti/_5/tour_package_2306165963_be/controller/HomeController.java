@@ -8,13 +8,9 @@ import jakarta.servlet.http.HttpServletRequest;
 @Controller
 public class HomeController {
 
-    /**
-     * Handles GET request for the home page (root path: /)
-     * URL: http://localhost:8080/
-     */
     @GetMapping({"/"})
     public String home(HttpServletRequest request, Model model) {
         model.addAttribute("currentUri", request.getRequestURI());
-        return "index";
+        return "home"; 
     }
 }
