@@ -6,14 +6,15 @@ import apap.ti._5.tour_package_2306165963_be.model.Plan;
 import apap.ti._5.tour_package_2306165963_be.repository.PackageRepository;
 import apap.ti._5.tour_package_2306165963_be.repository.PlanRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @Transactional
@@ -27,7 +28,7 @@ public class PackageServiceImpl implements PackageService {
 
     @Override
     public List<Package> getAllPackages() {
-        return packageRepository.findAll();
+        return packageRepository.findAll(Sort.by(Sort.Direction.ASC, "startDate"));
     }
 
     @Override
@@ -43,6 +44,11 @@ public class PackageServiceImpl implements PackageService {
     @Override
     public Package createPackage(Package packageEntity) {
         validatePackage(packageEntity);
+        
+        if (packageEntity.getStartDate().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Start date must be in the future or now");
+        }
+        
         packageEntity.setId(generatePackageId());
         packageEntity.setStatus("Pending");
         packageEntity.setDeleted(false);
@@ -58,17 +64,19 @@ public class PackageServiceImpl implements PackageService {
         
         Package existing = existingPackage.get();
         
-        // Check if can be edited (only Pending or Processed)
         if (!"Pending".equals(existing.getStatus()) && !"Processed".equals(existing.getStatus())) {
             throw new IllegalStateException("Cannot update package with status: " + existing.getStatus());
         }
         
         validatePackage(packageEntity);
         
+        if (packageEntity.getStartDate().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Start date must be in the future or now");
+        }
+        
         existing.setUserId(packageEntity.getUserId());
         existing.setPackageName(packageEntity.getPackageName());
         existing.setQuota(packageEntity.getQuota());
-        existing.setPrice(packageEntity.getPrice());
         existing.setStartDate(packageEntity.getStartDate());
         existing.setEndDate(packageEntity.getEndDate());
         
@@ -85,13 +93,15 @@ public class PackageServiceImpl implements PackageService {
         
         Package packageEntity = packageOptional.get();
         
-        // Can only delete if status = Pending
         if (!"Pending".equals(packageEntity.getStatus())) {
             throw new IllegalStateException("Can only delete packages with status Pending");
         }
         
+        packageEntity.setDeleted(true);
+        packageRepository.save(packageEntity);
+        
         planRepository.deleteByPackageId(id);
-        packageRepository.deleteById(id);
+        
         return true;
     }
 
@@ -109,12 +119,12 @@ public class PackageServiceImpl implements PackageService {
             throw new IllegalStateException("Only Pending packages can be processed");
         }
         
-        // Check if has plans
         if (packageEntity.getPlans() == null || packageEntity.getPlans().isEmpty()) {
             throw new IllegalStateException("Cannot process package without plans");
         }
 
-        boolean allPlansFulfilled = packageEntity.getPlans().stream().allMatch(plan -> "Fulfilled".equals(plan.getStatus()));
+        boolean allPlansFulfilled = packageEntity.getPlans().stream()
+                .allMatch(plan -> "Fulfilled".equals(plan.getStatus()));
         
         if (!allPlansFulfilled) {
             String unfulfilledPlans = packageEntity.getPlans().stream()
@@ -131,20 +141,25 @@ public class PackageServiceImpl implements PackageService {
         for (Plan plan : packageEntity.getPlans()) {
             for (OrderedQuantity oq : plan.getOrderedQuantities()) {
                 if (oq.getOrderedQuota() > oq.getQuota()) {
-                    throw new IllegalStateException("OrderedQuantity exceeds Activity Capacity for activity: " + oq.getActivityName());
+                    throw new IllegalStateException(
+                        "OrderedQuantity exceeds Activity Capacity for activity: " + oq.getActivityName()
+                    );
                 }
             }
         }
         
-        // Calculate total package price from all fulfilled plans
         long totalPrice = packageEntity.getPlans().stream()
                 .mapToLong(plan -> plan.getPrice() != null ? plan.getPrice() : 0L)
                 .sum();
         
         packageEntity.setPrice(totalPrice);
-        packageEntity.setStatus("Processed");
+        
+        packageEntity.setStatus("Waiting for Payment");
         
         packageRepository.save(packageEntity);
+        
+        // ⚠️ TODO: Create bill on bill module (not implemented yet)
+        // billService.createBillForPackage(packageEntity);
     }
 
     @Override
@@ -157,22 +172,19 @@ public class PackageServiceImpl implements PackageService {
         return packageRepository.findByStatus(status);
     }
 
-    // NEW: Get packages by vendor ID
     @Override
     public List<Package> getPackagesByVendorId(String vendorId) {
         return packageRepository.findPackagesByVendorId(vendorId);
     }
 
-    // NEW: Get package detail with RBAC
     @Override
     public Package getPackageDetail(String packageId, String userId, String role) {
         Package pkg = packageRepository.findById(packageId)
                 .orElseThrow(() -> new IllegalArgumentException("Package not found"));
 
-        // RBAC Logic
         boolean isOwner = pkg.getUserId().equals(userId);
         boolean isSuperadmin = "Superadmin".equals(role);
-        boolean isVendor = "TourPackageVendor".equals(role) && packageHasVendorActivity(pkg, userId);
+        boolean isVendor = "TourPackageVendor".equals(role);
 
         if (!isOwner && !isSuperadmin && !isVendor) {
             throw new IllegalStateException("You don't have access to this package");
@@ -181,14 +193,11 @@ public class PackageServiceImpl implements PackageService {
         return pkg;
     }
 
-    // NEW: Get all packages with RBAC
     @Override
     public List<Package> getAllPackagesWithRBAC(String userId, String role) {
         if ("Superadmin".equals(role) || "TourPackageVendor".equals(role)) {
-            // Superadmin dan Vendor bisa lihat semua
-            return packageRepository.findAll();
+            return getAllPackages();
         } else {
-            // Customer cuma bisa lihat miliknya sendiri + yang dibuat vendor
             return packageRepository.findByUserIdOrIsPublic(userId);
         }
     }
@@ -214,24 +223,6 @@ public class PackageServiceImpl implements PackageService {
         if (packageEntity.getPackageName() == null || packageEntity.getPackageName().trim().isEmpty()) {
             throw new IllegalArgumentException("Package name is required");
         }
-    }
-
-    private boolean packageHasVendorActivity(Package pkg, String vendorId) {
-        if (pkg.getPlans() == null) {
-            return false;
-        }
-        // Check if any ordered quantity's activity belongs to this vendor
-        // You need to fetch activity details to check vendorId
-        return pkg.getPlans().stream()
-                .filter(plan -> plan.getOrderedQuantities() != null)
-                .flatMap(plan -> plan.getOrderedQuantities().stream())
-                .map(OrderedQuantity::getActivityId)
-                .distinct()
-                .anyMatch(activityId -> isActivityOwnedByVendor(activityId, vendorId));
-    }
-    
-    private boolean isActivityOwnedByVendor(String activityId, String vendorId) {
-        return false;
     }
 
     private String generatePackageId() {

@@ -7,6 +7,8 @@ import apap.ti._5.tour_package_2306165963_be.service.PackageService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -29,36 +31,12 @@ public class PackageController {
     private DtoMapper dtoMapper;
 
     @GetMapping
-    public String getAllPackages(Model model, HttpServletRequest request) {
-        List<ReadPackageDto> packages = packageService.getAllPackages()
+    public String getAllPackages(Model model, HttpServletRequest request, Authentication authentication) {
+        String userId = authentication != null ? authentication.getName() : "";
+        String role = getUserRole(authentication);
+        
+        List<ReadPackageDto> packages = packageService.getAllPackagesWithRBAC(userId, role)
                 .stream()
-                .map(pkg -> {
-                if (pkg.getPlans() == null) {
-                    pkg.setPlans(new ArrayList<>());
-                }
-                return dtoMapper.toReadDto(pkg);
-            })
-            .collect(Collectors.toList());
-        
-        model.addAttribute("listPackage", packages);
-        model.addAttribute("currentUri", request.getRequestURI());
-        return "package/view-all";
-    }
-
-    
-    @GetMapping("/my-packages")
-    public String getMyPackages(Model model, HttpServletRequest request) {
-        
-        String tempVendorId = "";
-        if (request.getUserPrincipal() != null) {
-            tempVendorId = request.getUserPrincipal().getName();
-        }
-
-        final String vendorId = tempVendorId;
-        
-        List<ReadPackageDto> packages = packageService.getAllPackages()
-                .stream()
-                // .filter(pkg -> pkg.getUserId().equals(vendorId)) 
                 .map(pkg -> {
                     if (pkg.getPlans() == null) {
                         pkg.setPlans(new ArrayList<>());
@@ -66,27 +44,36 @@ public class PackageController {
                     return dtoMapper.toReadDto(pkg);
                 })
                 .collect(Collectors.toList());
-
+        
         model.addAttribute("listPackage", packages);
         model.addAttribute("currentUri", request.getRequestURI());
         return "package/view-all";
     }
-    
+
 
     @GetMapping("/{id}")
-    public String getPackageById(@PathVariable String id, Model model, HttpServletRequest request) {
-        Optional<Package> packageOptional = packageService.getPackageById(id);
-
-        if (packageOptional.isEmpty()) {
+    public String getPackageById(@PathVariable String id, Model model, HttpServletRequest request, 
+                                 Authentication authentication) {
+        String userId = authentication != null ? authentication.getName() : "";
+        String role = getUserRole(authentication);
+        
+        try {
+            Package pkg = packageService.getPackageDetail(id, userId, role);
+            
+            ReadPackageDto packageDto = dtoMapper.toReadDto(pkg);
+            model.addAttribute("currentPackage", packageDto);
+            model.addAttribute("currentUri", request.getRequestURI());
+            return "package/detail";
+            
+        } catch (IllegalArgumentException e) {
             model.addAttribute("title", "Package Not Found");
-            model.addAttribute("message", "Package with ID " + id + " not found.");
+            model.addAttribute("message", e.getMessage());
             return "error/404";
+        } catch (IllegalStateException e) {
+            model.addAttribute("title", "Access Denied");
+            model.addAttribute("message", e.getMessage());
+            return "error/403";
         }
-
-        ReadPackageDto packageDto = dtoMapper.toReadDto(packageOptional.get());
-        model.addAttribute("currentPackage", packageDto);
-        model.addAttribute("currentUri", request.getRequestURI());
-        return "package/detail";
     }
 
     @GetMapping("/create")
@@ -102,7 +89,8 @@ public class PackageController {
                                 BindingResult bindingResult,
                                 RedirectAttributes redirectAttributes,
                                 Model model,
-                                HttpServletRequest request) {
+                                HttpServletRequest request,
+                                Authentication authentication) {
         
         if (bindingResult.hasErrors()) {
             model.addAttribute("isEdit", false);
@@ -113,6 +101,9 @@ public class PackageController {
         }
         
         try {
+            String userId = authentication != null ? authentication.getName() : packageDto.getUserId();
+            packageDto.setUserId(userId);
+            
             Package packageEntity = dtoMapper.toEntity(packageDto);
             packageService.createPackage(packageEntity);
             redirectAttributes.addFlashAttribute("successMessage", "✅ Package created successfully!");
@@ -127,30 +118,36 @@ public class PackageController {
     }
 
     @GetMapping("/update/{id}")
-    public String formEditPackage(@PathVariable String id, Model model, HttpServletRequest request) {
-        Optional<Package> packageOptional = packageService.getPackageById(id);
-
-        if (packageOptional.isEmpty()) {
-            model.addAttribute("title", "Package Not Found");
-            model.addAttribute("message", "Package with ID " + id + " not found.");
-            return "error/404";
-        }
-
-        Package packageEntity = packageOptional.get();
+    public String formEditPackage(@PathVariable String id, Model model, HttpServletRequest request,
+                                  Authentication authentication) {
+        String userId = authentication != null ? authentication.getName() : "";
+        String role = getUserRole(authentication);
         
-        // Check if can be edited
-        if ("Processed".equals(packageEntity.getStatus())) {
-            model.addAttribute("title", "Cannot Edit Package");
-            model.addAttribute("message", "Processed packages cannot be edited.");
+        try {
+            Package packageEntity = packageService.getPackageDetail(id, userId, role);
+            
+            if (!"Pending".equals(packageEntity.getStatus()) && !"Processed".equals(packageEntity.getStatus())) {
+                model.addAttribute("title", "Cannot Edit Package");
+                model.addAttribute("message", "Only Pending or Processed packages can be edited.");
+                return "error/403";
+            }
+
+            UpdatePackageDto packageDto = dtoMapper.toUpdateDto(packageEntity);
+            model.addAttribute("isEdit", true);
+            model.addAttribute("packageId", id);
+            model.addAttribute("packageData", packageDto);
+            model.addAttribute("currentUri", request.getRequestURI());
+            return "package/form";
+            
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("title", "Package Not Found");
+            model.addAttribute("message", e.getMessage());
+            return "error/404";
+        } catch (IllegalStateException e) {
+            model.addAttribute("title", "Access Denied");
+            model.addAttribute("message", e.getMessage());
             return "error/403";
         }
-
-        UpdatePackageDto packageDto = dtoMapper.toUpdateDto(packageEntity);
-        model.addAttribute("isEdit", true);
-        model.addAttribute("packageId", id);
-        model.addAttribute("packageData", packageDto);
-        model.addAttribute("currentUri", request.getRequestURI());
-        return "package/form";
     }
 
     @PostMapping("/update/{id}")
@@ -159,7 +156,11 @@ public class PackageController {
                                BindingResult bindingResult,
                                RedirectAttributes redirectAttributes,
                                Model model,
-                               HttpServletRequest request) {
+                               HttpServletRequest request,
+                               Authentication authentication) {
+        
+        String userId = authentication != null ? authentication.getName() : "";
+        String role = getUserRole(authentication);
         
         if (bindingResult.hasErrors()) {
             model.addAttribute("isEdit", true);
@@ -171,11 +172,24 @@ public class PackageController {
         }
         
         try {
+            packageService.getPackageDetail(id, userId, role);
+            
             packageDto.setId(id);
             Package packageEntity = dtoMapper.toEntity(packageDto);
             packageService.updatePackage(packageEntity);
             redirectAttributes.addFlashAttribute("successMessage", "✅ Package updated successfully!");
             return "redirect:/package/" + id;
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("isEdit", true);
+            model.addAttribute("packageId", id);
+            model.addAttribute("packageData", packageDto);
+            model.addAttribute("currentUri", request.getRequestURI());
+            model.addAttribute("errorMessage", "❌ " + e.getMessage());
+            return "package/form";
+        } catch (IllegalStateException e) {
+            model.addAttribute("title", "Access Denied");
+            model.addAttribute("message", e.getMessage());
+            return "error/403";
         } catch (Exception e) {
             model.addAttribute("isEdit", true);
             model.addAttribute("packageId", id);
@@ -187,8 +201,14 @@ public class PackageController {
     }
 
     @PostMapping("/delete/{id}")
-    public String deletePackage(@PathVariable String id, RedirectAttributes redirectAttributes) {
+    public String deletePackage(@PathVariable String id, RedirectAttributes redirectAttributes,
+                                Authentication authentication) {
+        String userId = authentication != null ? authentication.getName() : "";
+        String role = getUserRole(authentication);
+        
         try {
+            packageService.getPackageDetail(id, userId, role);
+            
             boolean removed = packageService.deletePackage(id);
             
             if (removed) {
@@ -196,6 +216,8 @@ public class PackageController {
             } else {
                 redirectAttributes.addFlashAttribute("errorMessage", "❌ Package not found for deletion.");
             }
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "❌ " + e.getMessage());
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "❌ Cannot delete package: " + e.getMessage());
         }
@@ -203,14 +225,29 @@ public class PackageController {
     }
 
     @PostMapping("/{id}/process")
-    public String processPackage(@PathVariable String id, RedirectAttributes redirectAttributes) {
+    public String processPackage(@PathVariable String id, RedirectAttributes redirectAttributes,
+                                 Authentication authentication) {
+        String userId = authentication != null ? authentication.getName() : "";
+        String role = getUserRole(authentication);
+        
         try {
-
+            packageService.getPackageDetail(id, userId, role);
+            
             packageService.processPackage(id);
             redirectAttributes.addFlashAttribute("successMessage", "✅ Package processed successfully!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "❌ Failed to process package: " + e.getMessage());
         }
         return "redirect:/package/" + id;
+    }
+    
+    private String getUserRole(Authentication authentication) {
+        if (authentication == null || authentication.getAuthorities() == null) {
+            return "Customer";
+        }
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .findFirst()
+                .orElse("Customer");
     }
 }
