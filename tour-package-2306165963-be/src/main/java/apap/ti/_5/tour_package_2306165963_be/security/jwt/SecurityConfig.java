@@ -10,7 +10,6 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -57,16 +56,23 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable()) 
             .authorizeHttpRequests(auth -> auth
+                // Public endpoints
                 .requestMatchers("/", "/intro", "/intro/**").permitAll()
                 .requestMatchers("/login", "/register", "/perform_login").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
-                
                 .requestMatchers("/webjars/**", "/css/**", "/js/**", "/images/**").permitAll()
                 .requestMatchers("/error", "/favicon.ico").permitAll()
                 
                 .requestMatchers("/api/**").authenticated()
                 
-                .requestMatchers("/package/**", "/activities/**", "/statistics/**", "/loyalty/**").authenticated()
+                .requestMatchers("/package/**").hasAnyAuthority("Customer", "Superadmin", "TourPackageVendor")
+                
+                .requestMatchers("/activities/**").hasAnyAuthority("Superadmin", "TourPackageVendor", "FlightAirline", "AccomodationOwner", "RentalVendor")
+                
+                .requestMatchers("/statistics/**").hasAnyAuthority("Superadmin", "TourPackageVendor")
+                
+                .requestMatchers("/loyalty/admin/**").hasAuthority("Superadmin")
+                .requestMatchers("/loyalty/**").hasAnyAuthority("Customer", "Superadmin")
                 
                 .anyRequest().authenticated()
             )

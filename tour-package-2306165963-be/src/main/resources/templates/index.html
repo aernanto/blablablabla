@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,7 +34,11 @@
             --radius-lg: 16px;
         }
         
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         
         body {
             font-family: 'Inter', sans-serif;
@@ -44,7 +49,7 @@
             line-height: 1.7;
         }
         
-        /* Navigation Bar */
+        /* ========== NAVIGATION BAR ========== */
         .navbar {
             background: var(--peach-gradient);
             backdrop-filter: blur(10px);
@@ -79,17 +84,8 @@
         
         .navbar-right {
             display: flex;
-            gap: 8px;
+            gap: 12px;
             align-items: center;
-        }
-        
-        .user-info {
-            background: rgba(255, 255, 255, 0.3);
-            padding: 8px 16px;
-            border-radius: var(--radius-sm);
-            font-weight: 600;
-            color: var(--text-dark);
-            font-size: 0.9em;
         }
         
         .navbar a {
@@ -113,21 +109,57 @@
             box-shadow: 0 4px 12px rgba(255, 154, 118, 0.4);
         }
         
-        .btn-logout {
-            background: linear-gradient(135deg, #ff6b6b, var(--danger-color));
-            color: white;
-            padding: 10px 20px;
-            border: none;
+        /* User Info Section */
+        .user-greeting {
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 1em;
+            background: rgba(255, 255, 255, 0.4);
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+        }
+        
+        .username-highlight {
+            color: var(--coral-primary);
+            font-weight: 700;
+        }
+        
+        .user-role {
+            background: rgba(255, 255, 255, 0.5);
+            padding: 8px 14px;
             border-radius: var(--radius-sm);
             font-weight: 600;
+            color: var(--text-dark);
+            font-size: 0.85em;
+            border: 2px solid rgba(255, 154, 118, 0.3);
+        }
+        
+        /* Login/Logout Buttons */
+        .btn-logout,
+        .btn-login,
+        .btn-register {
+            padding: 10px 24px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: var(--shadow-sm);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.95em;
+        }
+        
+        .btn-logout {
+            background: linear-gradient(135deg, #ff6b6b, var(--danger-color));
+            color: white;
         }
         
         .btn-logout:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 6px 20px rgba(214, 48, 49, 0.4);
         }
         
         .btn-login {
@@ -135,6 +167,22 @@
             color: white;
         }
         
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 154, 118, 0.4);
+        }
+
+        .btn-register {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+        }
+        
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(116, 185, 255, 0.4);
+        }
+        
+        /* ========== CONTENT WRAPPER ========== */
         .content-wrapper {
             width: 90%;
             max-width: 1400px;
@@ -148,10 +196,17 @@
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
+        /* ========== TYPOGRAPHY ========== */
         h1 {
             color: var(--text-dark);
             border-bottom: 3px solid var(--coral-primary);
@@ -172,6 +227,7 @@
             background: var(--coral-dark);
         }
         
+        /* ========== ALERTS ========== */
         .alert {
             padding: 18px 24px;
             border-radius: var(--radius-md);
@@ -183,8 +239,14 @@
         }
         
         @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .alert-success {
@@ -199,6 +261,7 @@
             border-color: var(--danger-color);
         }
         
+        /* ========== BUTTONS ========== */
         .btn {
             padding: 12px 28px;
             border: none;
@@ -228,9 +291,17 @@
             transition: left 0.5s ease;
         }
         
-        .btn:hover::before { left: 100%; }
-        .btn:hover { transform: translateY(-2px); }
-        .btn:active { transform: translateY(-1px); }
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(-1px);
+        }
         
         .btn-primary {
             background: linear-gradient(135deg, var(--coral-primary), var(--coral-dark));
@@ -273,6 +344,7 @@
             font-size: 0.9em;
         }
         
+        /* ========== FORMS ========== */
         .form-group {
             margin-bottom: 25px;
         }
@@ -303,6 +375,7 @@
             background-color: white;
         }
         
+        /* ========== STATUS BADGES ========== */
         .status-processed {
             background: linear-gradient(135deg, #d4edda, #a8e6cf);
             color: #155724;
@@ -323,6 +396,7 @@
             display: inline-block;
         }
         
+        /* ========== FOOTER ========== */
         footer {
             text-align: center;
             padding: 30px 20px;
@@ -333,29 +407,53 @@
             border-top: 2px solid var(--peach-light);
         }
         
+        /* ========== RESPONSIVE ========== */
         @media (max-width: 768px) {
-            body { padding-top: 160px; }
-            .navbar { flex-direction: column; padding: 15px; }
-            .navbar-center, .navbar-right {
+            body {
+                padding-top: 160px;
+            }
+            
+            .navbar {
+                flex-direction: column;
+                padding: 15px;
+            }
+            
+            .navbar-center,
+            .navbar-right {
                 flex-wrap: wrap;
                 justify-content: center;
                 margin-top: 10px;
                 width: 100%;
             }
-            .content-wrapper { width: 95%; padding: 30px 20px; }
-            h1 { font-size: 1.8em; }
-            .btn { width: 100%; margin: 5px 0; }
+            
+            .content-wrapper {
+                width: 95%;
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .btn {
+                width: 100%;
+                margin: 5px 0;
+            }
         }
     </style>
 </head>
+
 <body>
-    <!-- Navigation Bar -->
+    <!-- ========== NAVIGATION BAR ========== -->
     <nav class="navbar">
+        <!-- Logo/Brand -->
         <a th:href="@{/}" class="navbar-brand">✈️ TourPack</a>
         
-        <!-- Center Menu - Only show if authenticated -->
+        <!-- Center Menu (hanya muncul kalau udah login) -->
         <div class="navbar-center" sec:authorize="isAuthenticated()">
-            <a th:href="@{/}" th:classappend="${currentUri == '/' ? 'active' : ''}">Home</a>
+            <a th:href="@{/}" th:classappend="${currentUri == '/' ? 'active' : ''}">
+                Home
+            </a>
             <a sec:authorize="hasAnyAuthority('Customer', 'TourPackageVendor', 'Superadmin')"
                th:href="@{/package}" 
                th:classappend="${#strings.startsWith(currentUri, '/package') ? 'active' : ''}">
@@ -371,44 +469,55 @@
                th:classappend="${#strings.startsWith(currentUri, '/statistics') ? 'active' : ''}">
                 Statistics
             </a>
-            <a sec:authorize="hasAnyAuthority('Customer', 'Superadmin')"
-               th:href="@{/loyalty}" 
-               th:classappend="${#strings.startsWith(currentUri, '/loyalty') ? 'active' : ''}">
-                Loyalty
-            </a>
         </div>
         
-        <!-- Right Menu -->
+        <!-- Right Menu (Login/Logout + User Info) -->
         <div class="navbar-right">
-            <div sec:authorize="!isAuthenticated()">
-                <a th:href="@{/login}" class="btn-login">🔐 Login</a>
-                <a th:href="@{/register}" class="btn-login">✨ Register</a>
+            <!-- Kalau BELUM login: tampilkan tombol Login & Register -->
+            <div sec:authorize="!isAuthenticated()" style="display: flex; gap: 12px; align-items: center;">
+                <a th:href="@{/login}" class="btn-login">
+                    🔐 Login
+                </a>
+                <a th:href="@{/register}" class="btn-register">
+                    ✨ Register
+                </a>
             </div>
-            <div sec:authorize="isAuthenticated()" style="display: flex; gap: 8px; align-items: center;">
-                <span class="user-info">
-                    👤 <span sec:authentication="name">User</span>
-                    (<span sec:authentication="authorities">[ROLE]</span>)
+            
+            <!-- Kalau SUDAH login: tampilkan Hi Username + Role + Logout -->
+            <div sec:authorize="isAuthenticated()" style="display: flex; gap: 12px; align-items: center;">
+                <!-- Greeting -->
+                <span class="user-greeting">
+                    👋 Hi, <span class="username-highlight" sec:authentication="name">User</span>!
                 </span>
+                
+                <!-- Role Badge -->
+                <span class="user-role" sec:authentication="authorities">
+                    [ROLE]
+                </span>
+                
+                <!-- Logout Button -->
                 <form th:action="@{/logout}" method="POST" style="margin: 0;">
-                    <button type="submit" class="btn-logout">🚪 Logout</button>
+                    <button type="submit" class="btn-logout">
+                        🚪 Logout
+                    </button>
                 </form>
             </div>
         </div>
     </nav>
 
-    <!-- Main Content Wrapper -->
+    <!-- ========== MAIN CONTENT ========== -->
     <div class="content-wrapper">
         <th:block th:insert="~{::div.content}"></th:block>
     </div>
     
-    <!-- Footer -->
+    <!-- ========== FOOTER ========== -->
     <footer>
         <p>&copy; 2025 TourPack - Tour Package Management System</p>
     </footer>
     
-    <!-- jQuery -->
+    <!-- ========== SCRIPTS ========== -->
     <script th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"></script>
-    <!-- DataTables JS -->
     <script th:src="@{/webjars/datatables/1.13.6/js/jquery.dataTables.min.js}"></script>
 </body>
+
 </html>

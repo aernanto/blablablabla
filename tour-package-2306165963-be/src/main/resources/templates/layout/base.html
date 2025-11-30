@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
 <div th:fragment="layout(pageTitle, content)"> 
 <head>
     <meta charset="UTF-8">
@@ -84,9 +84,15 @@
             gap: 8px;
         }
         
-        .navbar-menu { 
+        .navbar-center { 
             display: flex; 
             gap: 8px; 
+        }
+
+        .navbar-right {
+            display: flex;
+            gap: 12px;
+            align-items: center;
         }
         
         .navbar a {
@@ -108,6 +114,79 @@
             background: linear-gradient(135deg, var(--coral-primary), var(--coral-dark));
             color: white;
             box-shadow: 0 4px 12px rgba(255, 154, 118, 0.4);
+        }
+
+        /* User Info Section */
+        .user-greeting {
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 1em;
+            background: rgba(255, 255, 255, 0.4);
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+        }
+        
+        .username-highlight {
+            color: var(--coral-primary);
+            font-weight: 700;
+        }
+        
+        .user-role {
+            background: rgba(255, 255, 255, 0.5);
+            padding: 8px 14px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 0.85em;
+            border: 2px solid rgba(255, 154, 118, 0.3);
+        }
+
+        /* Login/Logout Buttons */
+        .btn-logout,
+        .btn-login,
+        .btn-register {
+            padding: 10px 24px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.95em;
+        }
+        
+        .btn-logout {
+            background: linear-gradient(135deg, #ff6b6b, var(--danger-color));
+            color: white;
+        }
+        
+        .btn-logout:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(214, 48, 49, 0.4);
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, var(--coral-primary), var(--coral-dark));
+            color: white;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 154, 118, 0.4);
+        }
+
+        .btn-register {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+        }
+        
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(116, 185, 255, 0.4);
         }
         
         /* Content Wrapper */
@@ -386,7 +465,7 @@
         /* Responsive Design */
         @media (max-width: 768px) {
             body { 
-                padding-top: 140px; 
+                padding-top: 160px; 
             }
             
             .navbar { 
@@ -394,10 +473,12 @@
                 padding: 15px;
             }
             
-            .navbar-menu { 
+            .navbar-center,
+            .navbar-right { 
                 flex-wrap: wrap;
                 justify-content: center;
                 margin-top: 10px;
+                width: 100%;
             }
             
             .content-wrapper { 
@@ -424,12 +505,58 @@
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar">
-        <div class="navbar-brand">✈️ TourPack</div>
-        <div class="navbar-menu">
+        <!-- Logo/Brand -->
+        <a th:href="@{/}" class="navbar-brand">✈️ TourPack</a>
+        
+        <!-- Center Menu (SELALU MUNCUL - TIDAK ADA SEC:AUTHORIZE DI SINI) -->
+        <div class="navbar-center">
             <a th:href="@{/}" th:classappend="${currentUri == '/' ? 'active' : ''}">Home</a>
-            <a th:href="@{/package}" th:classappend="${#strings.startsWith(currentUri, '/package') ? 'active' : ''}">Packages</a>
-            <a th:href="@{/activities}" th:classappend="${#strings.startsWith(currentUri, '/activities') ? 'active' : ''}">Activities</a>
-            <a th:href="@{/statistics}" th:classappend="${#strings.startsWith(currentUri, '/statistics') ? 'active' : ''}">Statistics</a>
+            <a th:href="@{/package}" 
+               th:classappend="${#strings.startsWith(currentUri, '/package') ? 'active' : ''}">
+                Packages
+            </a>
+            <a th:href="@{/activities}" 
+               th:classappend="${#strings.startsWith(currentUri, '/activities') ? 'active' : ''}">
+                Activities
+            </a>
+            <a th:href="@{/statistics}" 
+               th:classappend="${#strings.startsWith(currentUri, '/statistics') ? 'active' : ''}">
+                Statistics
+            </a>
+        </div>
+
+        <!-- Right Menu (Login/Logout + User Info) -->
+        <div class="navbar-right">
+            <!-- KALAU BELUM LOGIN: tampilkan tombol Login & Register -->
+            <div sec:authorize="!isAuthenticated()" style="display: flex; gap: 12px; align-items: center;">
+                <a th:href="@{/login}" class="btn-login">
+                    🔐 Login
+                </a>
+                <a th:href="@{/register}" class="btn-register">
+                    ✨ Register
+                </a>
+            </div>
+            
+            <!-- KALAU SUDAH LOGIN: tampilkan Hi Username + Role + Logout -->
+            <div sec:authorize="isAuthenticated()" style="display: flex; gap: 12px; align-items: center;">
+                <!-- Greeting -->
+                <span class="user-greeting">
+                    👋 Hi, <span class="username-highlight" sec:authentication="name">User</span>!
+                </span>
+                
+                <!-- Role Badge -->
+                <span class="user-role" sec:authentication="authorities">
+                    [ROLE]
+                </span>
+                
+                <!-- Logout Button dengan redirect ke home page -->
+                <form th:action="@{/logout}" method="POST" style="margin: 0;">
+                    <input type="hidden" name="redirect" value="/" />
+                    <button type="submit" class="btn-logout">
+                        🚪 Logout
+                    </button>
+                </form>
+            </div>
         </div>
     </nav>
 

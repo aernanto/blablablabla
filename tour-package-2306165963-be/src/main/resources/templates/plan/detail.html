@@ -101,17 +101,19 @@
             <h2 class="section-title">🎫 Ordered Activities</h2>
             <a th:href="@{/package/{packageId}/plan/{planId}/ordered-quantity/create(packageId=${currentPackage.id}, planId=${currentPlan.id})}"
                class="btn btn-primary"
-               th:if="${currentPlan.status != 'Processed'}">
+               th:if="${currentPlan.status != 'Processed' && currentPlan.status != 'Fulfilled'}">
                 ➕ Add Activity
             </a>
         </div>
 
-        <div th:if="${currentPlan.orderedQuantities.isEmpty()}" class="empty-state-small">
+        <div th:if="${currentPlan.orderedQuantities == null || currentPlan.orderedQuantities.isEmpty()}" 
+             class="empty-state-small">
             <div style="font-size: 3em; margin-bottom: 10px;">🎫</div>
             <p>No activities ordered yet. Start by adding activities to this plan!</p>
         </div>
 
-        <div th:if="${not currentPlan.orderedQuantities.isEmpty()}" class="ordered-grid">
+        <div th:unless="${currentPlan.orderedQuantities == null || currentPlan.orderedQuantities.isEmpty()}" 
+             class="ordered-grid">
             <div th:each="oq : ${currentPlan.orderedQuantities}" class="ordered-card">
                 <div class="ordered-header">
                     <h3 th:text="${oq.activityName}">Activity Name</h3>
@@ -125,7 +127,7 @@
                     </div>
                     <div class="info-row">
                         <span class="info-label">👥 Ordered Quantity:</span>
-                        <span th:text="${oq.orderedQuota} + ' / ' + ${oq.quota}"></span>
+                        <span><strong th:text="${oq.orderedQuota}"></strong> / <span th:text="${oq.quota}"></span> available</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">💵 Unit Price:</span>
@@ -137,20 +139,57 @@
                     </div>
                 </div>
 
-                <div class="ordered-actions" th:if="${currentPlan.status != 'Processed'}">
-                    <form th:action="@{/package/{packageId}/plan/{planId}/ordered-quantity/{oqId}/update(packageId=${currentPackage.id}, planId=${currentPlan.id}, oqId=${oq.id})}"
-                        method="POST" 
-                        style="display: inline;"
-                        onsubmit="return updateOrderedQuantity(event, this, '${oq.quota}')">
-                        <button type="submit" class="btn-action btn-edit">✏️ Edit Quantity</button>
-                    </form>
+                <div class="ordered-actions" th:if="${currentPlan.status != 'Processed' && currentPlan.status != 'Fulfilled'}">
+                    <button onclick="showEditQuantityModal(this)" 
+                            th:data-id="${oq.id}"
+                            th:data-name="${oq.activityName}"
+                            th:data-current="${oq.orderedQuota}"
+                            th:data-max="${oq.quota}"
+                            th:data-package="${currentPackage.id}"
+                            th:data-plan="${currentPlan.id}"
+                            class="btn-action btn-edit">
+                        ✏️ Edit Quantity
+                    </button>
 
                     <form th:action="@{/package/{packageId}/plan/{planId}/ordered-quantity/{oqId}/delete(packageId=${currentPackage.id}, planId=${currentPlan.id}, oqId=${oq.id})}"
                           method="POST" style="display: inline;">
                         <button type="submit" class="btn-action btn-delete"
-                                onclick="return confirm('⚠️ Remove this activity from plan?')">🗑️ Remove</button>
+                                onclick="return confirm('⚠️ Remove this activity from plan?')">
+                            🗑️ Remove
+                        </button>
                     </form>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Quantity Modal -->
+    <div id="editQuantityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✏️ Edit Ordered Quantity</h3>
+                <span class="close" onclick="closeEditQuantityModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p><strong>Activity:</strong> <span id="modalActivityName"></span></p>
+                <p><strong>Current Quantity:</strong> <span id="modalCurrentQty"></span></p>
+                <p><strong>Max Available:</strong> <span id="modalMaxQty"></span></p>
+                
+                <form id="editQuantityForm" method="POST">
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label for="newQuantity">New Quantity:</label>
+                        <input type="number" 
+                               id="newQuantity" 
+                               name="orderedQuota" 
+                               class="form-control" 
+                               min="1" 
+                               required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" onclick="closeEditQuantityModal()" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-primary">💾 Update Quantity</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -158,7 +197,7 @@
     <!-- Action Buttons -->
     <div class="action-bar">
         <a th:href="@{/package/{id}(id=${currentPackage.id})}" class="btn btn-secondary">← Back to Package</a>
-        <div style="display: flex; gap: 10px;" th:if="${currentPlan.status != 'Processed'}">
+        <div style="display: flex; gap: 10px;" th:if="${currentPlan.status != 'Processed' && currentPlan.status != 'Fulfilled'}">
             <a th:href="@{/package/{packageId}/plan/{planId}/update(packageId=${currentPackage.id}, planId=${currentPlan.id})}"
                class="btn btn-primary">✏️ Edit Plan</a>
             <form th:action="@{/package/{packageId}/plan/{planId}/process(packageId=${currentPackage.id}, planId=${currentPlan.id})}"
@@ -176,6 +215,22 @@
     </div>
 
     <style>
+        :root {
+            --coral-primary: #ff6b6b;
+            --coral-dark: #ee5a52;
+            --peach-light: #ffeaa7;
+            --text-dark: #2d3436;
+            --text-muted: #636e72;
+            --success-color: #00b894;
+            --danger-color: #d63031;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 8px rgba(0,0,0,0.12);
+            --shadow-lg: 0 8px 16px rgba(0,0,0,0.15);
+        }
+
         .breadcrumb {
             font-size: 0.9em;
             color: var(--text-muted);
@@ -496,6 +551,132 @@
             border-top: 2px solid var(--peach-light);
         }
 
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 0;
+            border-radius: var(--radius-lg);
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow-lg);
+            animation: slideDown 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            padding: 25px 30px;
+            border-bottom: 2px solid var(--peach-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: var(--text-dark);
+        }
+
+        .close {
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close:hover {
+            color: var(--danger-color);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dfe6e9;
+            border-radius: var(--radius-sm);
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--coral-primary);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--coral-primary), var(--coral-dark));
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
         @media (max-width: 768px) {
             .page-header {
                 flex-direction: column;
@@ -540,39 +721,46 @@
         }
     </style>
 
-<script>
-    function updateOrderedQuantity(event, form, maxQuota) {
-        event.preventDefault();
+    <script>
+    function showEditQuantityModal(button) {
+        const modal = document.getElementById('editQuantityModal');
+        const form = document.getElementById('editQuantityForm');
         
-        const newQuota = prompt(`Enter new ordered quantity (max: ${maxQuota}):`);
+        const id = button.getAttribute('data-id');
+        const name = button.getAttribute('data-name');
+        const current = button.getAttribute('data-current');
+        const max = button.getAttribute('data-max');
+        const packageId = button.getAttribute('data-package');
+        const planId = button.getAttribute('data-plan');
         
-        if (newQuota === null) {
-            return false; // User cancelled
-        }
+        // Set form action
+        form.action = `/package/${packageId}/plan/${planId}/ordered-quantity/${id}/update`;
         
-        const quotaNum = parseInt(newQuota);
+        // Set modal content
+        document.getElementById('modalActivityName').textContent = name;
+        document.getElementById('modalCurrentQty').textContent = current;
+        document.getElementById('modalMaxQty').textContent = max;
         
-        if (isNaN(quotaNum) || quotaNum <= 0) {
-            alert('⚠️ Please enter a valid positive number');
-            return false;
-        }
+        // Set input
+        const input = document.getElementById('newQuantity');
+        input.value = current;
+        input.max = max;
         
-        if (quotaNum > parseInt(maxQuota)) {
-            alert(`⚠️ Ordered quantity cannot exceed capacity (${maxQuota})`);
-            return false;
-        }
-        
-        // Add orderedQuota as hidden input
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'orderedQuota';
-        input.value = quotaNum;
-        form.appendChild(input);
-        
-        form.submit();
-        return true;
+        modal.style.display = 'block';
     }
-</script>
+
+    function closeEditQuantityModal() {
+        document.getElementById('editQuantityModal').style.display = 'none';
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('editQuantityModal');
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    }
+    </script>
 
 </div>
 </html>
